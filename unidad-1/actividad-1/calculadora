@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .calculadora-container {
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            max-width: 300px;
+        }
+
+        /* Display */
+        #display {
+            width: 100%;
+            height: 50px;
+            margin-bottom: 10px;
+            font-size: 30px;
+            text-align: right;
+            padding: 8px;
+            border: 2px solid #999;
+            border-radius: 8px;
+            background-color: white;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+        }
+
+        /* Tabla de botones */
+        table {
+            border-collapse: separate;
+            border-spacing: 5px;
+            width: 100%;
+        }
+
+        td {
+            padding: 3px;
+        }
+
+        /* Estilos base de botones */
+        button {
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            font-family: Arial, sans-serif;
+
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+
+        /* Botones numéricos - Azules */
+        .vestimenta-boton-numero {
+            background-color: #4a90e2;
+            color: white;
+        }
+
+        .vestimenta-boton-numero:hover {
+            background-color: #357abd;
+        }
+
+        /* Botones de operación - Verdes */
+        .vestimenta-boton-operacion {
+            background-color: #7ed321;
+            color: white;
+        }
+
+        .vestimenta-boton-operacion:hover {
+            background-color: #6bb81a;
+        }
+
+        /* Botón igual - Naranja */
+        .vestimenta-boton-igual {
+            background-color: #f5a623;
+            color: white;
+        }
+
+        .vestimenta-boton-igual:hover {
+            background-color: #d48e1b;
+        }
+
+        /* Botón borrar - Rojo */
+        .vestimenta-boton-borrar {
+            background-color: #d0021b;
+            color: white;
+            width: 100%;
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .vestimenta-boton-borrar:hover {
+            background-color: #a00115;
+        }
+
+        /* Botón punto - Azul */
+        .vestimenta-boton-punto {
+            background-color: #4a90e2;
+            color: white;
+        }
+
+        .vestimenta-boton-punto:hover {
+            background-color: #357abd;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculadora-container">
+        <!-- Display -->
+        <input type="text" id="display" readonly value="0">
+        
+        <!-- Tabla de botones -->
+        <table>
+            <tr>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('7')">7</button></td>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('8')">8</button></td>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('9')">9</button></td>
+                <td><button class="vestimenta-boton-operacion" onclick="agregarOperacion('+')">+</button></td>
+            </tr>
+            <tr>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('4')">4</button></td>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('5')">5</button></td>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('6')">6</button></td>
+                <td><button class="vestimenta-boton-operacion" onclick="agregarOperacion('-')">-</button></td>
+            </tr>
+            <tr>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('1')">1</button></td>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('2')">2</button></td>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('3')">3</button></td>
+                <td><button class="vestimenta-boton-operacion" onclick="agregarOperacion('*')">*</button></td>
+            </tr>
+            <tr>
+                <td><button class="vestimenta-boton-numero" onclick="agregarNumero('0')">0</button></td>
+                <td><button class="vestimenta-boton-punto" onclick="agregarPunto()">.</button></td>
+                <td><button class="vestimenta-boton-igual" onclick="calcular()">=</button></td>
+                <td><button class="vestimenta-boton-operacion" onclick="agregarOperacion('/')">/</button></td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <button class="vestimenta-boton-borrar" onclick="borrar()">Borrar</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        // Variables de estado
+        let valorActual = '0';
+        let valorAnterior = '';
+        let operacion = null;
+        let debeResetearDisplay = false;
+
+        // Elemento display
+        const display = document.getElementById('display');
+
+        // Función para agregar números
+        function agregarNumero(numero) {
+            if (debeResetearDisplay) {
+                valorActual = '0';
+                debeResetearDisplay = false;
+            }
+            
+            if (valorActual === '0') {
+                valorActual = numero;
+            } else {
+                valorActual += numero;
+            }
+            
+            actualizarDisplay();
+        }
+
+        // Función para agregar punto decimal
+        function agregarPunto() {
+            if (debeResetearDisplay) {
+                valorActual = '0';
+                debeResetearDisplay = false;
+            }
+            
+            if (!valorActual.includes('.')) {
+                valorActual += '.';
+                actualizarDisplay();
+            }
+        }
+
+        // Función para agregar operación
+        function agregarOperacion(op) {
+            if (operacion !== null && !debeResetearDisplay) {
+                calcular();
+            }
+            
+            valorAnterior = valorActual;
+            operacion = op;
+            debeResetearDisplay = true;
+        }
+
+        // Función para calcular resultado
+        function calcular() {
+            if (operacion === null || debeResetearDisplay) return;
+            
+            let resultado;
+            const anterior = parseFloat(valorAnterior);
+            const actual = parseFloat(valorActual);
+            
+            switch(operacion) {
+                case '+':
+                    resultado = anterior + actual;
+                    break;
+                case '-':
+                    resultado = anterior - actual;
+                    break;
+                case '*':
+                    resultado = anterior * actual;
+                    break;
+                case '/':
+                    if (actual === 0) {
+                        alert('Error: División por cero');
+                        borrar();
+                        return;
+                    }
+                    resultado = anterior / actual;
+                    break;
+                default:
+                    return;
+            }
+            
+            // Redondear a 8 decimales para evitar errores de punto flotante
+            valorActual = Math.round(resultado * 100000000) / 100000000;
+            valorActual = valorActual.toString();
+            
+            operacion = null;
+            valorAnterior = '';
+            debeResetearDisplay = true;
+            
+            actualizarDisplay();
+        }
+
+        // Función para borrar
+        function borrar() {
+            valorActual = '0';
+            valorAnterior = '';
+            operacion = null;
+            debeResetearDisplay = false;
+            actualizarDisplay();
+        }
+
+        // Función para actualizar el display
+        function actualizarDisplay() {
+            display.value = valorActual;
+        }
+
+        
+    </script>
+</body>
+</html>
