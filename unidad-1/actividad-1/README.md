@@ -4,7 +4,9 @@ Calculadora con las operaciones básicas utilizando tecnologías HTML, CSS y Jav
 
 ## Características 
 ** Operaciones básicas: Suma, resta, multiplicación y división.
+
 ** Gestión de decimales: Soporta números flotantes.
+
 ** Protección de errores: Manejo de división por cero y redondeo para evitar errores de coma.
 
 ## Estructura
@@ -19,7 +21,10 @@ operacion: El símbolo de la operación deseada
 debeResetearDisplay: Un booleano que decide si el próximo número debe añadirse o reemplaza al actual.
 
 ## Funciones:
-agregarNumero() Gestiona la entrada de dígitos 
+agregarNumero() Gestiona la entrada de dígitos
+
 agregarOperacion() Guarda el valor actual, define la operación y prepara el display para el segundo número.
+
 calcular() Realiza la operacion con un switch y un redondeo de 8 decimales.
+
 borrar() Resetea todas las variables.
