@@ -1,4 +1,5 @@
 # Calculadora Web component
+NOTA: Este Wb component fue basado en el ejemplo de calculadora que dió el profesor en clase, no utilicé la mía original. Sino que construí otra a partir de dicho ejemplo.
 
 1. Crear la clase MiCalculadora
 
