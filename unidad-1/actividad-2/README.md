@@ -1,5 +1,6 @@
 # Calculadora Web component
-NOTA: Este Web component fue hecho a partir del ejemplo de calculadora dada en clase por el profesor, no está hecho a partir de la "calculadora.html" que figura en actividad-1.
+NOTA: Este Web component fue hecho a partir del ejemplo de calculadora dada en clase por el profesor, no está hecho a partir de la "calculadora.html" que figura en actividad-1. 
+(basada en: https://github.com/Rosma222/Material_Extra-ISFT151-2026/tree/main/calculadora02)
 
 1. Crear la clase MiCalculadora
 
