@@ -1,4 +1,5 @@
 # Calculadora Web component
+NOTA: Este Web component fue hecho a partir del ejemplo de calculadora dada en clase por el profesor, no está hecho a partir de la "calculadora.html" que figura en actividad-1.
 
 1. Crear la clase MiCalculadora
 
