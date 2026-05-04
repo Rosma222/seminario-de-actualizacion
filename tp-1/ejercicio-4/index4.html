@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Chat</title>
+</head>
+
+<body>
+</body>
+
+<script>
+
+class ChatBox extends HTMLElement
+{
+  constructor()
+  {
+    // Siempre primero: llamar al constructor de la clase base.
+    super();
+
+    
+    // DECLARACIÓN DE MIEMBROS DEL COMPONENTE (referencias en this)
+    this.container    = document.createElement('div');
+    this.header       = document.createElement('div');
+    this.avatar       = document.createElement('img');
+    this.headerInfo   = document.createElement('div');
+    this.headerName   = document.createElement('p');
+    this.headerStatus = document.createElement('p');
+    this.messagesArea = document.createElement('div');
+    this.inputArea    = document.createElement('div');
+    this.textInput    = document.createElement('input');
+    this.sendBtn      = document.createElement('button');
+
+   
+    //CONFIGURACIÓN DE CADA ELEMENTO
+
+    // Contenedor principal
+    this.container.style.border         = '1px solid #ccc';
+    this.container.style.borderRadius   = '10px';
+    this.container.style.overflow       = 'hidden';
+    this.container.style.maxWidth       = '480px';
+    this.container.style.fontFamily     = 'Arial, sans-serif';
+    this.container.style.background     = '#fff';
+
+    // Encabezado (barra azul con nombre y estado)
+    this.header.style.display        = 'flex';
+    this.header.style.alignItems     = 'center';
+    this.header.style.gap            = '10px';
+    this.header.style.padding        = '12px 16px';
+    this.header.style.backgroundColor = '#3a7bd5';
+    this.header.style.color          = 'white';
+
+    // Avatar del encabezado
+    this.avatar.src              =  'https://cdn.phototourl.com/free/2026-05-03-5ae55f3e-98ac-40b3-96c9-bb13a4a0d6f0.jpg' 
+    this.avatar.alt              = 'Avatar';
+    this.avatar.style.width      = '40px';
+    this.avatar.style.height     = '40px';
+    this.avatar.style.borderRadius = '50%';
+    this.avatar.style.border     = '2px solid rgba(255,255,255,0.5)';
+    this.avatar.style.objectFit  = 'cover';
+
+    // Info del encabezado
+    this.headerInfo.style.flex = '1';
+
+    this.headerName.style.margin     = '0';
+    this.headerName.style.fontSize   = '15px';
+    this.headerName.style.fontWeight = 'bold';
+    this.headerName.textContent      = 'Maximiliano';
+
+    this.headerStatus.style.margin   = '0';
+    this.headerStatus.style.fontSize = '12px';
+    this.headerStatus.style.opacity  = '0.85';
+    this.headerStatus.textContent    = 'En línea';
+
+    // Área de mensajes scroll
+    this.messagesArea.style.height         = '300px';
+    this.messagesArea.style.overflowY      = 'auto';
+    this.messagesArea.style.padding        = '16px';
+    this.messagesArea.style.display        = 'flex';
+    this.messagesArea.style.flexDirection  = 'column';
+    this.messagesArea.style.gap            = '12px';
+    this.messagesArea.style.backgroundColor = '#f5f5f5';
+
+    // Área de input inferior
+    this.inputArea.style.display         = 'flex';
+    this.inputArea.style.gap             = '8px';
+    this.inputArea.style.padding         = '10px 12px';
+    this.inputArea.style.borderTop       = '1px solid #ddd';
+    this.inputArea.style.backgroundColor = '#fff';
+
+    // Campo de texto
+    this.textInput.type        = 'text';
+    this.textInput.placeholder = 'Escribir mensaje...';
+    this.textInput.style.flex       = '1';
+    this.textInput.style.padding    = '8px 12px';
+    this.textInput.style.border     = '1px solid #ccc';
+    this.textInput.style.borderRadius = '20px';
+    this.textInput.style.fontSize   = '14px';
+    this.textInput.style.outline    = 'none';
+
+    // Botón enviar
+    this.sendBtn.textContent           = 'Enviar';
+    this.sendBtn.style.padding         = '8px 16px';
+    this.sendBtn.style.backgroundColor = '#3a7bd5';
+    this.sendBtn.style.color           = 'white';
+    this.sendBtn.style.border          = 'none';
+    this.sendBtn.style.borderRadius    = '20px';
+    this.sendBtn.style.fontSize        = '14px';
+    this.sendBtn.style.cursor          = 'pointer';
+
+    
+    // ARMADO DE LA JERARQUÍA (appendChild)
+    this.headerInfo.appendChild(this.headerName);
+    this.headerInfo.appendChild(this.headerStatus);
+
+    this.header.appendChild(this.avatar);
+    this.header.appendChild(this.headerInfo);
+
+    this.inputArea.appendChild(this.textInput);
+    this.inputArea.appendChild(this.sendBtn);
+
+    this.container.appendChild(this.header);
+    this.container.appendChild(this.messagesArea);
+    this.container.appendChild(this.inputArea);
+
+    this.appendChild(this.container);
+  }
+
+  
+  // MÉTODO PÚBLICO: addMessage(text, sender, time)
+  // Inserta un mensaje en el chat
+  addMessage(text, sender = 'other', time = null)
+  {
+    const isMe = (sender === 'me');
+    const now  = time || new Date().toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Fila que alinea avatar + burbuja
+    const row = document.createElement('div');
+    row.style.display        = 'flex';
+    row.style.flexDirection  = isMe ? 'row-reverse' : 'row';
+    row.style.alignItems     = 'flex-end';
+    row.style.gap            = '8px';
+
+    // avatar circular
+    const avatarEl = document.createElement('div');
+    avatarEl.style.width           = '32px';
+    avatarEl.style.height          = '32px';
+    avatarEl.style.borderRadius    = '50%';
+    avatarEl.style.backgroundColor = isMe ? '#3a7bd5' : '#888';
+    avatarEl.style.display         = 'flex';
+    avatarEl.style.alignItems      = 'center';
+    avatarEl.style.justifyContent  = 'center';
+    avatarEl.style.fontSize        = '11px';
+    avatarEl.style.fontWeight      = 'bold';
+    avatarEl.style.color           = 'white';
+    avatarEl.style.flexShrink      = '0';
+    avatarEl.textContent           = isMe ? 'Ro' : 'MG';
+
+    // Burbuja de mensaje
+    const bubble = document.createElement('div');
+    bubble.style.maxWidth        = '65%';
+    bubble.style.padding         = '9px 13px';
+    bubble.style.borderRadius    = isMe
+      ? '16px 16px 4px 16px'
+      : '16px 16px 16px 4px';
+    bubble.style.backgroundColor = isMe ? '#3a7bd5' : '#fff';
+    bubble.style.color           = isMe ? 'white' : '#333';
+    bubble.style.border          = isMe ? 'none' : '1px solid #ddd';
+    bubble.style.fontSize        = '14px';
+    bubble.style.lineHeight      = '1.5';
+
+    // Texto del mensaje
+    const msgText = document.createElement('p');
+    msgText.style.margin = '0 0 4px 0';
+    msgText.textContent  = text;
+
+    // Timestamp
+    const timeEl = document.createElement('span');
+    timeEl.style.fontSize  = '11px';
+    timeEl.style.opacity   = '0.65';
+    timeEl.style.display   = 'block';
+    timeEl.style.textAlign = isMe ? 'left' : 'right';
+    timeEl.textContent     = now;
+
+    bubble.appendChild(msgText);
+    bubble.appendChild(timeEl);
+    row.appendChild(avatarEl);
+    row.appendChild(bubble);
+    this.messagesArea.appendChild(row);
+
+    // Auto-scroll al último mensaje
+    this.messagesArea.scrollTop = this.messagesArea.scrollHeight;
+  }
+
+  // Handler del botón enviar 
+  onSendBtnClick()
+  {
+    const texto = this.textInput.value.trim();
+    if (texto !== '')
+    {
+      this.addMessage(texto, 'me');
+      this.textInput.value = '';
+    }
+  }
+
+  // Se ejecuta cuando el elemento se inserta en el DOM
+  connectedCallback()
+  {
+    console.log('we-chat: agregado al DOM');
+
+    // Importante: usar .bind(this) para que "this" dentro del handler
+    // apunte a la instancia del componente, no al botón.
+    this.sendBtn.onclick = this.onSendBtnClick.bind(this);
+
+    // También envia con Enter
+    this.textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.onSendBtnClick();
+    });
+  }
+
+  // Se ejecuta cuando el elemento es removido del DOM
+  disconnectedCallback()
+  {
+    console.log('we-chat: removido del DOM');
+    this.sendBtn.onclick = null;
+  }
+}
+
+// Registrar element con el nombre 'we-chat'
+customElements.define('we-chat', ChatBox);
+
+
+
+// FUNCIÓN MAIN: punto de entrada de la aplicación
+function main()
+{
+  // Instanciar el componente 
+  let miChat = new ChatBox();
+
+  // Agregar al body
+  document.body.appendChild(miChat);
+
+  //  método addMessage()
+  // Mensajes de ejemplo simulando conversación
+  miChat.addMessage('¡Hola! ¿Cómo estás?',              'other', '10:00');
+  miChat.addMessage('¡Todo bien! ¿Vos?',               'me',    '10:01');
+  miChat.addMessage('Re bien, gracias. Vamos al cine hoy?',    'other', '10:02');
+  miChat.addMessage('Dale, te espero a las 19h.',              'me',    '10:03');
+  miChat.addMessage('Perfecto. Nos vemos.', 'other', '10:04');
+}
+
+window.onload = main;
+
+</script>
+
+</html>
