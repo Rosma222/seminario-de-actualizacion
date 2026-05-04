@@ -1,1 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saludo App</title>
+</head>
 
+<body>
+</body>
+
+    <script>
+
+        class SaludoApp extends HTMLElement {  // creo el web component
+
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' }); // creo el shadow DOM para encapsular css y html
+                //shadowRoot es la raíz del shadow DOM, donde se define el contenido del componente  
+                this.shadowRoot.innerHTML = `        
+                    <style>
+                        .container {
+                            width: 300px;
+                            margin: 50px auto;
+                        }
+
+                        input, button {
+                            padding: 10px;
+                            font-size: 16px;
+                        }
+
+                        button {
+                            cursor: pointer;
+                        }
+
+                        p {
+                            font-size: 18px;
+                            font-weight: bold;
+                        }
+                    </style>
+
+                    <div class="container">
+                        <input type="text" id="nombre" placeholder="Nombre">
+                        <input type="text" id="apellido" placeholder="Apellido">
+                        <button id="saludar">Saludar</button>
+                        <p id="resultado"></p>
+                    </div>
+                `;
+            }
+
+            connectedCallback() { 
+
+                console.log('Agregado al DOM');
+                const shadow = this.shadowRoot; //se accede al shadowDOM p/ usar los elementos dentro del componente
+                this.nombreInput = shadow.getElementById('nombre');  //se accede a los elementos del shadow DOM usando getElementById
+                this.apellidoInput = shadow.getElementById('apellido');
+                this.resultado = shadow.getElementById('resultado');
+                const boton = shadow.getElementById('saludar');
+                
+                boton.addEventListener('click', this.manejarSaludo.bind(this)); //addEventListener asigna evento al botón, 
+            }                                                                   //bind(this) asegura q el contexto de 'this' dentro de manejarSaludo sea 
+                                                                                //el mismo del componente, para acceder a sus propiedades y métodos
+            manejarSaludo() {
+                let nombre = this.nombreInput.value.trim().toLowerCase(); //obtiene valor del input quita espacios y convierte a minuscula
+                let apellido = this.apellidoInput.value.trim().toUpperCase(); //obtiene valor del input quita espacios y convierte a mayuscula
+
+                nombre = nombre.charAt(0).toUpperCase() + nombre.slice(1); //.slice(1) devuelve un string a partir del indice 1 (sin la primera letra)
+
+                this.resultado.textContent = `¡Buenos días ${apellido}, ${nombre}!`;
+                };
+
+            disconnectedCallback() { //se llama cuando el component se elimina del DOM,p/limpiar recursos o eventos
+                    console.log('Eliminado del DOM');
+                }   
+            }
+        
+        customElements.define('saludo-app', SaludoApp);  //registro el webComp con un nombre
+
+        //instancia del componente
+         function main(){   
+    	let mySaludador = new SaludoApp();
+	    document.body.appendChild( mySaludador );
+         }
+
+    window.onload = main;
+
+
+    </script>
+
+
+</html>
