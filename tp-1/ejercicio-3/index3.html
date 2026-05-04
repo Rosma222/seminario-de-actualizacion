@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ecualizador</title>
+  </head>
+
+<body>
+  <!-- Instancia del componente -->
+  <!-- <graphic-eq></graphic-eq> -->
+</body>
+
+  <script>
+    class GraphicEQ extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' }); //Encapsulación con Shadow DOM - mode open permite acceso desde fuera
+
+        // Propiedad interna de datos (Objeto completo)
+        this._eqData = {
+          presetName: 'Custom',
+          bands: [
+            { freq: '32Hz', value: 0 },
+            { freq: '64Hz', value: 0 },
+            { freq: '130Hz', value: 0 },
+            { freq: '260Hz', value: 0 },
+            { freq: '500Hz', value: 0 },
+            { freq: '1k', value: 0 },
+            { freq: '2k', value: 0 },
+            { freq: '4k', value: 0 },
+            { freq: '8.3k', value: 0 },
+            { freq: '16.5k', value: 0 }
+          ]
+        };
+      }
+
+      connectedCallback() {
+        this._buildDOM();      // Construye la estructura visual
+        this._attachEvents();  // Vincula los eventos
+        this._render();        // Dibuja el estado inicial 
+      }
+
+      // Construcción del DOM usando document.createElement()
+      _buildDOM() {
+        // Estilos encapsulados en Shadow DOM
+        const style = document.createElement('style');
+        style.textContent = `
+          :host {
+            display: inline-block;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 11px;
+            background-color: #d4d0c8;
+            border: 2px outset #ffffff;
+            padding: 2px;
+            box-sizing: border-box;
+          }
+          .window-frame { border: 1px solid #808080; padding: 4px; }
+          .title-bar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: white;
+            padding: 2px 4px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+          }
+          .close-btn {
+            background: #c0c0c0; color: black; border: 1px outset white;
+            width: 16px; height: 14px; font-size: 9px; line-height: 10px;
+            text-align: center; cursor: pointer; padding: 0;
+          }
+          .top-controls { margin-bottom: 6px; display: flex; gap: 4px; }
+          .preset-input { width: 150px; }
+          .main-area { display: flex; justify-content: space-between; }
+          .sliders-area { display: flex; gap: 4px; background: #d4d0c8; padding: 10px 0; }
+          .slider-col { display: flex; flex-direction: column; align-items: center; width: 40px; position: relative; }
+          .slider-col input[type=range] {
+            -webkit-appearance: none; appearance: none;
+            width: 95px; height: 2px; background: white; border: 1px solid gray;
+            transform: rotate(-90deg); margin: 55px 0; cursor: pointer;
+          }
+          .slider-col input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 24px; height: 10px; background: #d4d0c8; border: 1px solid black;
+          }
+          .freq-label { position: absolute; top: -2px; font-size: 10px; }
+          .db-label { position: absolute; bottom: -2px; font-size: 10px; }
+          .buttons-area { display: flex; flex-direction: column; gap: 6px; justify-content: center; padding-left: 8px; }
+          .btn {
+            background: #d4d0c8; border: 2px outset white; padding: 4px 8px; cursor: pointer; min-width: 70px; font-family: inherit;
+          }
+          .btn:active { border-style: inset; }
+        `;
+        this.shadowRoot.appendChild(style);
+
+        // Estructura Principal
+        this.frame = document.createElement('div');
+        this.frame.className = 'window-frame';
+
+        // Barra de Título
+        this.titleBar = document.createElement('div');
+        this.titleBar.className = 'title-bar';
+        this.titleText = document.createElement('span');
+        this.titleText.textContent = 'Graphic EQ';
+        this.closeBtn = document.createElement('button');
+        this.closeBtn.className = 'close-btn';
+        this.closeBtn.textContent = 'X';
+        this.titleBar.appendChild(this.titleText);
+        this.titleBar.appendChild(this.closeBtn);
+
+        // Controles Superiores (Selector de Preset)
+        this.topControls = document.createElement('div');
+        this.topControls.className = 'top-controls';
+        this.presetInput = document.createElement('input');
+        this.presetInput.type = 'text';
+        this.presetInput.className = 'preset-input';
+        
+        // Botón de Guardar 
+        this.saveBtn = document.createElement('button');
+        this.saveBtn.className = 'btn';
+        this.saveBtn.textContent = '💾'; 
+        this.saveBtn.style.padding = '2px 6px';
+        this.saveBtn.title = 'Guardar preset';
+
+        // Botón de Eliminar (cruz)
+        this.deleteBtn = document.createElement('button');
+        this.deleteBtn.className = 'btn';
+        this.deleteBtn.textContent = '✖';
+        this.deleteBtn.style.padding = '2px 6px';
+        this.deleteBtn.title = 'Eliminar preset';
+
+        this.topControls.appendChild(this.presetInput);
+        this.topControls.appendChild(this.saveBtn);
+        this.topControls.appendChild(this.deleteBtn);
+        
+        // Área Central
+        this.mainArea = document.createElement('div');
+        this.mainArea.className = 'main-area';
+
+        this.slidersArea = document.createElement('div');
+        this.slidersArea.className = 'sliders-area';
+        // Los sliders se inyectan dinámicamente en _render()
+
+        this.buttonsArea = document.createElement('div');
+        this.buttonsArea.className = 'buttons-area';
+        this.btnOK = document.createElement('button'); this.btnOK.className = 'btn'; this.btnOK.textContent = 'OK';
+        this.btnCancel = document.createElement('button'); this.btnCancel.className = 'btn'; this.btnCancel.textContent = 'Cancel';
+        this.btnAudition = document.createElement('button'); this.btnAudition.className = 'btn'; this.btnAudition.textContent = 'Audition';
+        this.btnHelp = document.createElement('button'); this.btnHelp.className = 'btn'; this.btnHelp.textContent = 'Help';
+        
+        this.buttonsArea.append(this.btnOK, this.btnCancel, this.btnAudition, this.btnHelp);
+        this.mainArea.append(this.slidersArea, this.buttonsArea);
+        this.frame.append(this.titleBar, this.topControls, this.mainArea);
+        this.shadowRoot.appendChild(this.frame);
+      }
+
+      // Renderizado visual basado en this._eqData
+      _render() {
+        this.slidersArea.innerHTML = '';
+        this.sliderInputs = [];
+
+        this._eqData.bands.forEach((band, index) => {
+          const col = document.createElement('div');
+          col.className = 'slider-col';
+
+          const freqLbl = document.createElement('div');
+          freqLbl.className = 'freq-label';
+          freqLbl.textContent = band.freq;
+
+          const input = document.createElement('input');
+          input.type = 'range';
+          input.min = -12;
+          input.max = 12;
+          input.value = band.value;
+          input.dataset.index = index;
+
+          const dbLbl = document.createElement('div');
+          dbLbl.className = 'db-label';
+          dbLbl.textContent = `${band.value > 0 ? '+' : ''}${band.value}dB`;
+
+          col.append(freqLbl, input, dbLbl);
+          this.slidersArea.appendChild(col);
+          this.sliderInputs.push(input);
+        });
+
+        this.presetInput.value = this._eqData.presetName;
+      }
+
+      _attachEvents() {
+        // Actualización de datos al mover sliders
+        this.slidersArea.addEventListener('input', (e) => {
+          if (e.target.type === 'range') {
+            const idx = parseInt(e.target.dataset.index);
+            const val = parseInt(e.target.value);
+            
+            // Actualiza el dato interno
+            this._eqData.bands[idx].value = val;
+            
+            // Actualiza la etiqueta visual instantáneamente
+            const col = e.target.parentElement;
+            col.querySelector('.db-label').textContent = `${val > 0 ? '+' : ''}${val}dB`;
+          }
+        });
+
+            // Guardar preset actual
+        this.saveBtn.addEventListener('click', () => {
+            const presetName = this.presetInput.value.trim();
+                if (presetName) {
+            // Aquí podrías guardar en localStorage o disparar un evento
+            console.log('Guardando preset:', presetName, this.getData());
+            alert(`Preset "${presetName}" guardado`);
+        }
+        });
+
+        // Eliminar preset
+        this.deleteBtn.addEventListener('click', () => {
+            const presetName = this.presetInput.value.trim();
+                if (presetName) {
+            console.log('Eliminando preset:', presetName);
+            alert(`Preset "${presetName}" eliminado`);
+            // Resetear a valores por defecto
+            this._eqData.presetName = 'Default';
+            this._eqData.bands.forEach(band => band.value = 0);
+            this._render();
+        }
+        }); 
+
+        // Sincroniza el nombre del preset
+        this.presetInput.addEventListener('input', (e) => {
+          this._eqData.presetName = e.target.value;
+        });
+      }
+
+      // === API PÚBLICA ===
+
+      // Obtiene el objeto de datos actual
+      getData() {
+        return JSON.parse(JSON.stringify(this._eqData));
+      }
+
+      // Asigna nuevos datos y refresca la UI instantáneamente
+      setData(newData) {
+        if (!newData || !newData.bands) return;
+        this._eqData = JSON.parse(JSON.stringify(newData));
+        this._render(); // Aplicación visual inmediata
+      }
+
+        disconnectedCallback() {
+                // Limpieza de eventos si es necesario
+            }
+            
+
+    }
+
+    
+    customElements.define('graphic-eq', GraphicEQ);
+
+    //instancia
+    function main(){   
+	let myEqualizer = new GraphicEQ();
+	document.body.appendChild( myEqualizer );
+    }
+
+    window.onload = main;
+
+  </script>
+
+</html>
