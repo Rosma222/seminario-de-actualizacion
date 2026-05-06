@@ -4,105 +4,129 @@
 <head>
   <meta charset="UTF-8">
   <title>Validador de Fecha</title>
-  </head>
+</head>
 
 <body>
 </body>
 
-  <script>
-    class ValidadorFecha extends HTMLElement {
-      constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.intentos = 0; // inicializacion contador
-      }
-
-      connectedCallback() {
-        // Crear elementos
-        this.label = document.createElement('label');
-        this.label.textContent = 'Fecha de nacimiento:';
-
-        this.input = document.createElement('input');
-        this.input.type = 'text';
-        this.input.placeholder = 'DD/MM/YYYY';
-
-        this.btn = document.createElement('button');
-        this.btn.textContent = 'Validar';
-
-        // Estructura
-        const container = document.createElement('div');
-        container.appendChild(this.label);
-        container.appendChild(document.createElement('br'));
-        container.appendChild(this.input);
-        container.appendChild(this.btn);
-
-        // Insertar en Shadow DOM
-        this.shadowRoot.appendChild(container);
-
-        // Eventos
-        this.btn.addEventListener('click', () => this.validar());
-        this.input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') this.validar();
-        });
-      }
-
-      validar() {
-        const texto = this.input.value.trim(); // trim p/Eliminar espacios
-        const patron = /^\d{2}\/\d{2}\/\d{4}$/;
-
-        if (!patron.test(texto)) {
-          this.intentos++;
-          alert(`Formato inválido. Use DD/MM/YYYY. Este es su intento fallido número: ${this.intentos}`);
-          this.input.focus();
-          return;
-        }
-
-        const [dia, mes, anio] = texto.split('/').map(Number); // Convertir a numeros
-        const fecha = new Date(anio, mes - 1, dia);
-
-        const esFechaReal = fecha.getFullYear() === anio &&
-                            fecha.getMonth() === mes - 1 &&
-                            fecha.getDate() === dia;
-
-        // si no es fecha valida
-        if (!esFechaReal) {
-          this.intentos++;
-          alert(`FECHA INCORRECTA - Este es su intento fallido número: ${this.intentos}`);
-          this.input.focus();
-        }
-        // si pone una fecha futura 
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0); // hora p/ comparar solo por fecha
-        fecha.setHours(0, 0, 0, 0);
-
-        if (fecha > hoy) {
-          this.intentos++;
-          alert(`FECHA FUTURA - No puede ser fecha de nacimiento. Este es su intento fallido número: ${this.intentos}`);
-          this.input.focus();
-          return;
-        }
-
-        // Si pasa todas las validaciones
-        alert(`Fecha válida: ${texto}`);
-        this.intentos = 0;
-        this.input.value = '';
-      } 
-    
-        disconnectCallback() { 
-		alert('Disconnect');
-		this.loginBtn.onclick = null;
-	}
-}
-    customElements.define('validador-fecha', ValidadorFecha);
-
-    //instancia del componente
-   function main(){   
-	let myValidator = new ValidadorFecha();
-	document.body.appendChild( myValidator );
+<script>
+  class ValidadorFecha extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' }); // Crea Shadow DOM - mode:open da acceso desde fuera del componente
+      this.intentos = 0;
     }
 
-    window.onload = main;
+    connectedCallback() {
+      // Crear elementos
+      this.label = document.createElement('label');
+      this.label.textContent = 'Fecha de nacimiento:';
 
-  </script>
+      this.input = document.createElement('input');
+      this.input.type = 'text';
+      this.input.placeholder = 'DD/MM/YYYY';
+
+      this.btn = document.createElement('button');
+      this.btn.textContent = 'Validar';
+
+      // Estructura
+      const container = document.createElement('div');
+      container.appendChild(this.label);
+      container.appendChild(document.createElement('br'));
+      container.appendChild(this.input);
+      container.appendChild(this.btn);
+
+      this.shadowRoot.appendChild(container);
+
+      // Eventos con funciones con nombre 
+      this.btn.onclick = this.manejadorValidacion.bind(this);
+      this.input.onkeydown = this.manejadorTecla.bind(this);
+    }
+
+    manejadorValidacion() {
+      this.validar();
+    }
+
+    manejadorTecla(evento) {
+      if (evento.key === 'Enter') {
+        this.validar();
+      }
+    }
+
+    limpiarEspacios(texto) { // Eliminar espacios al inicio y al final
+      return texto.replace(/^\s+|\s+$/g, '');
+    }
+
+    validar() {
+      var texto = this.limpiarEspacios(this.input.value);
+      var patron = /^\d{2}\/\d{2}\/\d{4}$/;
+
+      if (!patron.test(texto)) {
+        this.intentos++;
+        alert("Formato inválido. Use DD/MM/YYYY. Este es su intento fallido número: " + this.intentos);
+        this.input.focus();
+        return;
+      }
+
+      var partes = texto.split('/');
+      var dia = this.convertirANumero(partes[0]);
+      var mes = this.convertirANumero(partes[1]);
+      var anio = this.convertirANumero(partes[2]);
+      
+      var fecha = new Date(anio, mes - 1, dia);
+
+      var esFechaReal = fecha.getFullYear() === anio &&
+                        fecha.getMonth() === mes - 1 &&
+                        fecha.getDate() === dia;
+
+      if (!esFechaReal) {
+        this.intentos++;
+        alert("FECHA INCORRECTA - Este es su intento fallido número: " + this.intentos);
+        this.input.focus();
+        return;
+      }
+      
+      var hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      var fechaComparar = new Date(anio, mes - 1, dia);
+      fechaComparar.setHours(0, 0, 0, 0);
+
+      if (fechaComparar > hoy) {
+        this.intentos++;
+        alert("FECHA FUTURA - No puede ser fecha de nacimiento. Este es su intento fallido número: " + this.intentos);
+        this.input.focus();
+        return;
+      }
+
+      alert("Fecha válida: " + texto);
+      this.intentos = 0;
+      this.input.value = '';
+    }
+    
+    convertirANumero(cadena) {  //convertir cadena a numero
+      var resultado = 0;
+      for (var i = 0; i < cadena.length; i++) {
+        resultado = resultado * 10 + (cadena.charCodeAt(i) - 48);
+      }
+      return resultado;
+    }
+
+    disconnectedCallback() {
+      alert('Disconnect');
+      this.btn.onclick = null;
+      this.input.onkeydown = null;
+    }
+  }
+  
+  customElements.define('validador-fecha', ValidadorFecha);
+
+  function main() {
+    var myValidator = document.createElement('validador-fecha');
+    document.body.appendChild(myValidator);
+  }
+
+  window.onload = main;
+</script>
 
 </html>
