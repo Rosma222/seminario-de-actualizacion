@@ -36,5 +36,5 @@ hoy.setHours(0, 0, 0, 0);
 ## El objeto Date se comparan con > o < 
 Y normalizadas las horas. Si la fecha ingresada es > a hoy (futura) entra al if y se cuenta como fallido.
 ```js
-if (fecha > hoy)  
+if (fechaComparar > hoy)  
 ```
