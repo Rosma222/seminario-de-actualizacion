@@ -206,7 +206,6 @@
         this.saveBtn.addEventListener('click', () => {
             const presetName = this.presetInput.value.trim();
                 if (presetName) {
-            // Aquí podrías guardar en localStorage o disparar un evento
             console.log('Guardando preset:', presetName, this.getData());
             alert(`Preset "${presetName}" guardado`);
         }
@@ -231,14 +230,13 @@
         });
       }
 
-      // === API PÚBLICA ===
 
       // Obtiene el objeto de datos actual
       getData() {
         return JSON.parse(JSON.stringify(this._eqData));
       }
 
-      // Asigna nuevos datos y refresca la UI instantáneamente
+      // Asigna nuevos datos y refresca la UI 
       setData(newData) {
         if (!newData || !newData.bands) return;
         this._eqData = JSON.parse(JSON.stringify(newData));
@@ -246,7 +244,7 @@
       }
 
         disconnectedCallback() {
-                // Limpieza de eventos si es necesario
+                // Limpieza de eventos
             }
             
 
