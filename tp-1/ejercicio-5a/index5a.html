@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+<meta charset="utf-8" />
+<title>FACTURA AFIP </title>
+
+</head>
+
+<body> 
+</body>
+
+<script>
+
+// Clase principal del WebComponent
+class FacturaAFIPForm extends HTMLElement {
+  
+  constructor() {
+    super();
+    
+    this.shadow = this.attachShadow({ mode: 'open' }); // Creamos el Shadow DOM para encapsular el componente
+    this.items = [];    // Array para almacenar los items 
+    this.aplicarEstilos();// Aplicamos estilos
+  }
+  
+  connectedCallback() {
+    this.crearFormulario();   // Creamos el formulario cuando el componente está en el DOM
+  }
+  
+  disconnectedCallback() {   // Limpieza si fuera necesaria
+    console.log('Componente factura-afip-form desconectado');
+  }
+  
+  // Método para crear elementos del formulario
+  crearFormulario() {
+    //contenedor principal
+    this.contenedor = document.createElement('div');
+    this.contenedor.className = 'factura-container';
+    
+    // Título
+    var titulo = document.createElement('h2');
+    titulo.textContent = 'Cargar Factura AFIP';
+    this.contenedor.appendChild(titulo);
+    
+    // DATOS DEL CLIENTE 
+    var seccionCliente = document.createElement('fieldset');
+    var leyendaCliente = document.createElement('legend');
+    leyendaCliente.textContent = 'Datos del Cliente';
+    seccionCliente.appendChild(leyendaCliente);
+    
+    // Razón Social - Domicilio - CUIT
+    this.crearCampoTexto(seccionCliente, 'razonSocial', 'Razón Social / Apellido y Nombre:', 'text');
+    this.crearCampoTexto(seccionCliente, 'domicilio', 'Domicilio:', 'text');
+    this.crearCampoTexto(seccionCliente, 'cuit', 'CUIT:', 'number');
+
+    this.contenedor.appendChild(seccionCliente); // agrega al contenedor principal
+    
+    // DATOS DE LA FACTURA 
+    var seccionFactura = document.createElement('fieldset');
+    var leyendaFactura = document.createElement('legend');
+    leyendaFactura.textContent = 'Datos de la Factura';
+    seccionFactura.appendChild(leyendaFactura);
+    
+    // Tipo de Factura (B)
+    var labelTipo = document.createElement('label');
+    labelTipo.textContent = 'Tipo de Factura:';
+    seccionFactura.appendChild(labelTipo);
+    seccionFactura.appendChild(document.createElement('br'));
+    
+    this.inputTipoFactura = document.createElement('input');
+    this.inputTipoFactura.type = 'text';
+    this.inputTipoFactura.value = 'B';
+    this.inputTipoFactura.readOnly = true;
+    this.inputTipoFactura.name = 'tipoFactura';
+    seccionFactura.appendChild(this.inputTipoFactura);
+    seccionFactura.appendChild(document.createElement('br'));
+    seccionFactura.appendChild(document.createElement('br'));
+    
+    //Fecha de Emisión - Nro de Factura
+    this.crearCampoTexto(seccionFactura, 'fechaEmision', 'Fecha de Emisión:', 'date');
+    this.crearCampoTexto(seccionFactura, 'numeroFactura', 'Número de Factura:', 'number');
+    
+    this.contenedor.appendChild(seccionFactura);
+    
+    // ITEMS
+    var seccionItems = document.createElement('fieldset');
+    var leyendaItems = document.createElement('legend');
+    leyendaItems.textContent = 'Items de la Factura';
+    seccionItems.appendChild(leyendaItems);
+    
+    // Contenedor 
+    this.itemsContainer = document.createElement('div');
+    this.itemsContainer.className = 'items-container';
+    seccionItems.appendChild(this.itemsContainer);
+    
+    // Botón de agregar item
+    var btnAgregarItem = document.createElement('button');
+    btnAgregarItem.type = 'button';
+    btnAgregarItem.textContent = '+ Agregar Item';
+    btnAgregarItem.onclick = this.agregarItem.bind(this);
+    seccionItems.appendChild(btnAgregarItem);
+    seccionItems.appendChild(document.createElement('br'));
+    
+    this.contenedor.appendChild(seccionItems);
+    
+    //TOTALES
+    var seccionTotales = document.createElement('fieldset');
+    var leyendaTotales = document.createElement('legend');
+    leyendaTotales.textContent = 'Totales';
+    seccionTotales.appendChild(leyendaTotales);
+    
+    //  Subtotal 
+    var labelSubtotal = document.createElement('label');
+    labelSubtotal.textContent = 'Subtotal:';
+    seccionTotales.appendChild(labelSubtotal);
+    seccionTotales.appendChild(document.createElement('br'));
+    
+    this.inputSubtotal = document.createElement('input');
+    this.inputSubtotal.type = 'number';
+    this.inputSubtotal.readOnly = true;
+    this.inputSubtotal.name = 'subtotal';
+    this.inputSubtotal.value = '0.00';
+    seccionTotales.appendChild(this.inputSubtotal);
+    seccionTotales.appendChild(document.createElement('br'));
+    
+    // IVA
+    var labelImpuestos = document.createElement('label');
+    labelImpuestos.textContent = 'Impuestos (21%):';
+    seccionTotales.appendChild(labelImpuestos);
+    seccionTotales.appendChild(document.createElement('br'));
+    
+    this.inputImpuestos = document.createElement('input');
+    this.inputImpuestos.type = 'number';
+    this.inputImpuestos.readOnly = true;
+    this.inputImpuestos.name = 'impuestos';
+    this.inputImpuestos.value = '0.00';
+    seccionTotales.appendChild(this.inputImpuestos);
+    seccionTotales.appendChild(document.createElement('br'));
+    
+    //Total 
+    var labelTotal = document.createElement('label');
+    labelTotal.textContent = 'Total:';
+    seccionTotales.appendChild(labelTotal);
+    seccionTotales.appendChild(document.createElement('br'));
+    
+    this.inputTotal = document.createElement('input');
+    this.inputTotal.type = 'number';
+    this.inputTotal.readOnly = true;
+    this.inputTotal.name = 'total';
+    this.inputTotal.value = '0.00';
+    seccionTotales.appendChild(this.inputTotal);
+    seccionTotales.appendChild(document.createElement('br'));
+    
+    this.contenedor.appendChild(seccionTotales);
+    
+    // BOTÓN FACTURAR
+    var btnFacturar = document.createElement('button');
+    btnFacturar.type = 'button';
+    btnFacturar.textContent = 'Generar Factura';
+    btnFacturar.className = 'btn-facturar';
+    btnFacturar.onclick = this.generarFactura.bind(this);
+    this.contenedor.appendChild(btnFacturar);
+    
+    this.shadow.appendChild(this.contenedor); // Agrega el contenedor al shadow DOM
+    this.agregarItem();  // Agregamos un item 
+  }
+  
+  // Método p/ crear campos de texto
+  crearCampoTexto(contenedor, nombre, etiqueta, tipo) {
+    var label = document.createElement('label');
+    label.textContent = etiqueta;
+    label.htmlFor = nombre;
+    contenedor.appendChild(label);
+    contenedor.appendChild(document.createElement('br'));
+    
+    var input = document.createElement('input');
+    input.type = tipo;
+    input.name = nombre;
+    input.id = nombre;
+    input.required = true;
+    contenedor.appendChild(input);
+    contenedor.appendChild(document.createElement('br'));
+  }
+  
+  // Método p/ agregar un nuevo item
+  agregarItem() {
+    var itemIndex = this.items.length;
+    
+    //  contenedor del item
+    var itemDiv = document.createElement('div');
+    itemDiv.className = 'item-factura';
+    itemDiv.style.border = '1px solid #ccc';
+    itemDiv.style.padding = '10px';
+    itemDiv.style.marginBottom = '10px';
+    
+    //Código
+    var labelCodigo = document.createElement('label');
+    labelCodigo.textContent = 'Código:';
+    itemDiv.appendChild(labelCodigo);
+    
+    var inputCodigo = document.createElement('input');
+    inputCodigo.type = 'text';
+    inputCodigo.name = 'codigo_' + itemIndex;
+    inputCodigo.placeholder = 'Código';
+    inputCodigo.required = true;
+    itemDiv.appendChild(inputCodigo);
+    itemDiv.appendChild(document.createElement('br'));
+    
+    // Descripción
+    var labelDesc = document.createElement('label');
+    labelDesc.textContent = 'Descripción:';
+    itemDiv.appendChild(labelDesc);
+    
+    var inputDesc = document.createElement('input');
+    inputDesc.type = 'text';
+    inputDesc.name = 'descripcion_' + itemIndex;
+    inputDesc.placeholder = 'Descripción del producto/servicio';
+    inputDesc.required = true;
+    inputDesc.style.width = '300px';
+    itemDiv.appendChild(inputDesc);
+    itemDiv.appendChild(document.createElement('br'));
+    
+    //Cantidad
+    var labelCant = document.createElement('label');
+    labelCant.textContent = 'Cantidad:';
+    itemDiv.appendChild(labelCant);
+    
+    var inputCant = document.createElement('input');
+    inputCant.type = 'number';
+    inputCant.name = 'cantidad_' + itemIndex;
+    inputCant.placeholder = 'Cant';
+    inputCant.min = '1';
+    inputCant.value = '1';
+    inputCant.required = true;
+    inputCant.onchange = this.calcularTotales.bind(this);
+    itemDiv.appendChild(inputCant);
+    itemDiv.appendChild(document.createElement('br'));
+    
+    // Precio Unitario
+    var labelPrecio = document.createElement('label');
+    labelPrecio.textContent = 'Precio Unitario:';
+    itemDiv.appendChild(labelPrecio);
+    
+    var inputPrecio = document.createElement('input');
+    inputPrecio.type = 'number';
+    inputPrecio.name = 'precio_' + itemIndex;
+    inputPrecio.placeholder = 'Precio';
+    inputPrecio.min = '0';
+    inputPrecio.step = '0.01';
+    inputPrecio.required = true;
+    inputPrecio.onchange = this.calcularTotales.bind(this);
+    itemDiv.appendChild(inputPrecio);
+    itemDiv.appendChild(document.createElement('br'));
+    
+    // Botón eliminar item
+    var btnEliminar = document.createElement('button');
+    btnEliminar.type = 'button';
+    btnEliminar.textContent = 'Eliminar Item';
+    btnEliminar.onclick = this.eliminarItem.bind(this, itemDiv);
+    itemDiv.appendChild(btnEliminar);
+    
+    
+    this.itemsContainer.appendChild(itemDiv);// Agregamos el item al contenedor
+    this.items.push(itemDiv);// Guardamos referencia al item
+  }
+  
+  // Método p/ eliminar item
+  eliminarItem(itemElement) {
+    if (this.items.length > 1) {
+      var index = this.items.indexOf(itemElement);
+      if (index > -1) {
+        this.items.splice(index, 1);
+      }
+      itemElement.parentNode.removeChild(itemElement);
+      this.calcularTotales();
+    } else {
+      alert('Debe haber al menos un item en la factura');
+    }
+  }
+  
+  // Método p/ calcular los totales 
+  calcularTotales() {
+    var subtotal = 0;
+    
+    // Recorremos todos los items
+    for (var i = 0; i < this.items.length; i++) {
+      var item = this.items[i];
+      var cantidadInput = item.querySelector('input[name^="cantidad_"]');
+      var precioInput = item.querySelector('input[name^="precio_"]');
+      
+      if (cantidadInput && precioInput) {
+        var cantidad = parseFloat(cantidadInput.value) || 0;
+        var precio = parseFloat(precioInput.value) || 0;
+        subtotal += cantidad * precio;
+      }
+    }
+    
+    // 21% de IVA
+    var impuestos = subtotal * 0.21;
+    var total = subtotal + impuestos;
+    
+    // Actualiza los  totales
+    this.inputSubtotal.value = subtotal.toFixed(2);
+    this.inputImpuestos.value = impuestos.toFixed(2);
+    this.inputTotal.value = total.toFixed(2);
+  }
+  
+  // Método p/ generar la factura en una otra pestaña
+  generarFactura() {
+    // Validamos que los campos estén completos
+    if (!this.validarFormulario()) {
+      alert('Por favor, complete todos los campos requeridos');
+      return;
+    }
+    
+    var datos = this.obtenerDatosFormulario();   // Obtener los datos del formulario  
+    var htmlFactura = this.generarHTMLFactura(datos);  // Genera el HTML de la factura
+    var nuevaPestana = window.open('', '_blank');  // Abre una nueva pestaña
+    
+    // Escribir el HTML en la nueva pestaña
+    nuevaPestana.document.write(htmlFactura);
+    nuevaPestana.document.close();
+  }
+  
+  // Método para validar el formulario
+  validarFormulario() {
+    var inputs = this.shadow.querySelectorAll('input[required]');
+    for (var i = 0; i < inputs.length; i++) {
+      if (!inputs[i].value.trim()) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  // Método p/obtener datos del formulario
+  obtenerDatosFormulario() {
+    var datos = {
+      razonSocial: this.shadow.querySelector('input[name="razonSocial"]').value,
+      domicilio: this.shadow.querySelector('input[name="domicilio"]').value,
+      cuit: this.shadow.querySelector('input[name="cuit"]').value,
+      fechaEmision: this.shadow.querySelector('input[name="fechaEmision"]').value,
+      numeroFactura: this.shadow.querySelector('input[name="numeroFactura"]').value,
+      tipoFactura: this.shadow.querySelector('input[name="tipoFactura"]').value,
+      subtotal: this.inputSubtotal.value,
+      impuestos: this.inputImpuestos.value,
+      total: this.inputTotal.value,
+      items: []
+    };
+    
+    // Obtener los items
+    for (var i = 0; i < this.items.length; i++) {
+      var item = this.items[i];
+      var itemData = {
+        codigo: item.querySelector('input[name^="codigo_"]').value,
+        descripcion: item.querySelector('input[name^="descripcion_"]').value,
+        cantidad: item.querySelector('input[name^="cantidad_"]').value,
+        precioUnitario: item.querySelector('input[name^="precio_"]').value
+      };
+      datos.items.push(itemData);
+    }
+    
+    return datos;
+  }
+  
+  // Generar el HTML de la factura
+  generarHTMLFactura(datos) {
+    var lineas = [];
+    
+    lineas.push('<!DOCTYPE html>');
+    lineas.push('<html lang="es">');
+    lineas.push('<head>');
+    lineas.push('<meta charset="UTF-8">');
+    lineas.push('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+    lineas.push('<title>Factura ' + datos.tipoFactura + ' - ' + datos.numeroFactura + '</title>');
+    lineas.push('<style>');
+    lineas.push('body { font-family: Arial, sans-serif; margin: 20px; }');
+    lineas.push('.factura { max-width: 800px; margin: 0 auto; border: 2px solid #000; padding: 20px; }');
+    lineas.push('.header { display: flex; justify-content: space-between; margin-bottom: 20px; }');
+    lineas.push('.logo { font-size: 24px; font-weight: bold; }');
+    lineas.push('.tipo-factura { font-size: 32px; font-weight: bold; border: 3px solid #000; padding: 10px; }');
+    lineas.push('.datos-empresa { margin-bottom: 20px; }');
+    lineas.push('.datos-cliente { background-color: #f0f0f0; padding: 10px; margin-bottom: 20px; }');
+    lineas.push('table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }');
+    lineas.push('th, td { border: 1px solid #000; padding: 8px; text-align: left; }');
+    lineas.push('th { background-color: #e0e0e0; }');
+    lineas.push('.totales { text-align: right; }');
+    lineas.push('.totales td { padding: 5px 10px; }');
+    lineas.push('.totales .total-final { font-size: 18px; font-weight: bold; }');
+    lineas.push('</style>');
+    lineas.push('</head>');
+    lineas.push('<body>');
+    lineas.push('<div class="factura">');
+    
+    // Header 
+    lineas.push('<div class="header">');
+    lineas.push('<div class="logo">AFIP</div>');
+    lineas.push('<div class="tipo-factura">' + datos.tipoFactura + '</div>');
+    lineas.push('</div>');
+    
+    // Datos 
+    lineas.push('<div class="datos-empresa">');
+    lineas.push('<strong>FACTURA</strong><br>');
+    lineas.push('Punto de Venta: 0002<br>');
+    lineas.push('Nro. de Factura: ' + datos.numeroFactura + '<br>');
+    lineas.push('Fecha de Emisión: ' + datos.fechaEmision + '<br>');
+    lineas.push('CUIT: ' + datos.cuit + '<br>');
+    lineas.push('</div>');
+    
+    // Datos cliente
+    lineas.push('<div class="datos-cliente">');
+    lineas.push('<strong>Datos del Cliente:</strong><br>');
+    lineas.push('Razón Social: ' + datos.razonSocial + '<br>');
+    lineas.push('Domicilio: ' + datos.domicilio + '<br>');
+    lineas.push('CUIT: ' + datos.cuit + '<br>');
+    lineas.push('</div>');
+    
+    // items
+    lineas.push('<table>');
+    lineas.push('<thead>');
+    lineas.push('<tr>');
+    lineas.push('<th>Código</th>');
+    lineas.push('<th>Descripción</th>');
+    lineas.push('<th>Cantidad</th>');
+    lineas.push('<th>Precio Unitario</th>');
+    lineas.push('<th>Subtotal</th>');
+    lineas.push('</tr>');
+    lineas.push('</thead>');
+    lineas.push('<tbody>');
+    
+    for (var i = 0; i < datos.items.length; i++) {
+      var item = datos.items[i];
+      var subtotalItem = item.cantidad * item.precioUnitario;
+      lineas.push('<tr>');
+      lineas.push('<td>' + item.codigo + '</td>');
+      lineas.push('<td>' + item.descripcion + '</td>');
+      lineas.push('<td>' + item.cantidad + '</td>');
+      lineas.push('<td>$' + parseFloat(item.precioUnitario).toFixed(2) + '</td>');
+      lineas.push('<td>$' + subtotalItem.toFixed(2) + '</td>');
+      lineas.push('</tr>');
+    }
+    
+    lineas.push('</tbody>');
+    lineas.push('</table>');
+    
+    // Totales
+    lineas.push('<table class="totales">');
+    lineas.push('<tr>');
+    lineas.push('<td>Subtotal:</td>');
+    lineas.push('<td>$' + datos.subtotal + '</td>');
+    lineas.push('</tr>');
+    lineas.push('<tr>');
+    lineas.push('<td>IVA (21%):</td>');
+    lineas.push('<td>$' + datos.impuestos + '</td>');
+    lineas.push('</tr>');
+    lineas.push('<tr class="total-final">');
+    lineas.push('<td>TOTAL:</td>');
+    lineas.push('<td>$' + datos.total + '</td>');
+    lineas.push('</tr>');
+    lineas.push('</table>');
+    
+    lineas.push('</div>');
+    lineas.push('</body>');
+    lineas.push('</html>');
+    
+    return lineas.join('');
+  }
+  
+  // Método para aplicar estilos 
+  aplicarEstilos() {
+    var estilos = document.createElement('style');
+    estilos.textContent = `
+.factura-container {
+  font-family: Arial, sans-serif;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+}
+
+h2 {
+  text-align: center;
+  color: #333;
+}
+
+fieldset {
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 15px;
+}
+
+legend {
+  font-weight: bold;
+  color: #555;
+  padding: 0 10px;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+.btn-facturar {
+  background-color: #2196F3;
+  width: 100%;
+  font-size: 18px;
+  padding: 15px;
+}
+
+.btn-facturar:hover {
+  background-color: #0b7dda;
+}
+
+.items-container {
+  margin-bottom: 10px;
+}
+
+.item-factura {
+  background-color: #fff;
+  border-radius: 3px;
+}
+`;
+    
+    this.shadow.appendChild(estilos);
+  }
+}
+
+
+customElements.define('factura-afip-form', FacturaAFIPForm); // Registrar el WebComponent
+
+
+// FUNCIÓN MAIN: punto de entrada de la aplicación
+function main()
+{
+  let MiFactura = document.createElement('factura-afip-form');
+
+  document.body.appendChild(MiFactura);
+}
+window.onload = main;
+
+</script>
+
+
+</html>
