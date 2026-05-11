@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Clima MDP WebComponent</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f0f0f0; }
+        /* Estilos básicos para la tabla generada */
+        table { border-collapse: collapse; font-size: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+        th { background-color: #e0e0e0; font-weight: bold; }
+        .header-title { background-color: #cbcbbd; font-weight: bold; }
+        .row-temp { background-color: #f5d795; }
+        .row-precip { background-color: #d0e0ff; }
+        .row-sol { background-color: #fdff6a; }
+        .row-humedad { background-color: #63abf3; }
+        .col-annual { font-weight: bold; background-color: #ffff99; }
+        .header-mes { background-color: #f0f0f0; }
+        
+        /* Estilo para resaltar la fila de encabezado principal */
+        tr.main-header th { background-color: #c3c0c0; }
+    </style>
+    <h2>Datos Meteorológicos Mar del Plata (1961-1990)</h2>
+
+</head>
+
+<body>
+   
+ </body>
+    
+    
+    <!-- Instancia del WebComponent -->
+     <tabla-clima-mardelplata id="miTablaClima"></tabla-clima-mardelplata>
+
+    <script>
+        // Definición de los datos
+        var DATOS_CLIMA = {
+            titulo: "Parámetros climáticos promedio de Mar del Plata, BA (1961–1990)",
+            encabezados: ['Mes', 'Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.', 'Jul.', 'Ago.', 'Sep.', 'Oct.', 'Nov.', 'Dic.', 'Anual'],
+            filas: [
+                { label: 'Temp. máx. abs. (°C)', tipo: 'temp', valores: [42.4, 38.1, 36.3, 32.5, 27.4, 22.2, 27.7, 24.7, 28.8, 34.4, 35.7, 39.4, 39.4] },
+                { label: 'Temp. máx. media (°C)', tipo: 'temp', valores: [26.3, 25.8, 23.7, 20.5, 16.8, 13.8, 13.1, 14.4, 16.0, 18.5, 21.7, 24.4, 19.6] },
+                { label: 'Temp. media (°C)', tipo: 'temp', valores: [20.3, 19.9, 18.0, 14.8, 11.3, 8.5, 8.1, 8.9, 10.5, 13.1, 15.9, 18.5, 14.0] },
+                { label: 'Temp. mín. media (°C)', tipo: 'temp', valores: [14.3, 14.1, 12.5, 9.1, 6.4, 4.1, 3.8, 4.0, 5.3, 7.6, 10.1, 12.7, 8.7] },
+                { label: 'Temp. mín. abs. (°C)', tipo: 'temp', valores: [4.7, 1.2, 1.9, -1.0, -3.0, -5.5, -9.3, -8.4, -5.5, -3.0, -2.0, -0.2, -9.3] },
+                { label: 'Precipitación total (mm)', tipo: 'precip', valores: [100.1, 72.8, 107.0, 73.3, 73.5, 54.9, 58.9, 64.0, 56.4, 83.4, 75.3, 104.0, 923.6] },
+                { label: 'Días de precipitaciones (> 0.1 mm)', tipo: 'precip', valores: [9, 8, 9, 9, 9, 9, 9, 8, 7, 10, 10, 10, 107] },
+                { label: 'Horas de sol', tipo: 'sol', valores: [288.3, 234.5, 232.5, 195.0, 167.4, 120.0, 127.1, 164.3, 174.0, 210.8, 222.0, 269.7, 2405.6] },
+                { label: 'Humedad relativa (%)', tipo: 'humedad', valores: [76, 77, 79, 81, 83, 84, 81, 81, 80, 80, 77, 76, 80] }
+            ]
+        };
+
+        class TablaClimaMdP extends HTMLElement {
+            constructor() {
+                super();
+                // Nota: No usamos shadow DOM para que los estilos CSS globales apliquen fácilmente,
+                // aunque podríamos si quisieramos encapsulamiento total.
+            }
+
+            connectedCallback() {
+                var self = this;
+                self._render();
+            }
+
+            _render() {
+                var self = this;
+                
+                // Crear contenedor principal
+                var wrapper = document.createElement('div');
+                
+                // Título
+                var titulo = document.createElement('h3');
+                titulo.textContent = DATOS_CLIMA.titulo;
+                titulo.style.textAlign = 'center';
+                wrapper.appendChild(titulo);
+
+                // Tabla
+                var table = document.createElement('table');
+
+                // Encabezado
+                var thead = document.createElement('thead');
+                var trHead = document.createElement('tr');
+                trHead.className = 'main-header';
+
+                DATOS_CLIMA.encabezados.forEach(function(texto) {
+                    var th = document.createElement('th');
+                    th.textContent = texto;
+                    if (texto === 'Anual') th.className = 'col-annual';
+                    trHead.appendChild(th);
+                });
+                thead.appendChild(trHead);
+                table.appendChild(thead);
+
+                // Cuerpo
+                var tbody = document.createElement('tbody');
+                
+                DATOS_CLIMA.filas.forEach(function(filaData) {
+                    var tr = document.createElement('tr');
+                    
+                    // Determinar clase de fila para color de fondo
+                    var rowClass = '';
+                    if (filaData.tipo === 'temp') rowClass = 'row-temp';
+                    else if (filaData.tipo === 'precip') rowClass = 'row-precip';
+                    else if (filaData.tipo === 'sol') rowClass = 'row-sol';
+                    else if (filaData.tipo === 'humedad') rowClass = 'row-humedad';
+                    tr.className = rowClass;
+
+                    // Etiqueta de la fila
+                    var thLabel = document.createElement('th');
+                    thLabel.textContent = filaData.label;
+                    thLabel.style.textAlign = 'left'; // Alineación izq
+                    thLabel.style.backgroundColor = 'transparent'; 
+                    tr.appendChild(thLabel);
+
+                    // Datos
+                    filaData.valores.forEach(function(valor) {
+                        var td = document.createElement('td');
+                        td.textContent = valor;
+                        tr.appendChild(td);
+                    });
+                    
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                wrapper.appendChild(table);
+                self.appendChild(wrapper);
+            }
+
+            /**
+             * Método que obtiene el conjunto de promedios de las temperaturas 
+            */
+            obtenerPromediosTemperaturas() {
+                // Filas para el promedio 0 a 4
+                var filasTemperatura = [0, 1, 2, 3, 4];
+                var sumaTotal = 0;
+                var contador = 0;
+                var detalle = {};
+
+                filasTemperatura.forEach(function(indice) {
+                    // El valor anual es el último elemento del array (12 de c/fila)
+                    var valorAnual = DATOS_CLIMA.filas[indice].valores[12];
+                    sumaTotal += valorAnual;
+                    contador++;
+                });
+
+                var promedioGeneral = sumaTotal / contador;
+
+                return {
+                    detalle: detalle,
+                    promedio_general: promedioGeneral.toFixed(2)
+                };
+            }
+
+            disconnectedCallback() {
+                // para limpiar recursos o eventos si los hubiéramos agregado
+            }
+        }
+
+        // Definir el componente
+        customElements.define('tabla-clima-mardelplata', TablaClimaMdP);
+
+        
+        function main() {
+            var componente = document.getElementById('miTablaClima');
+            var resultado = componente.obtenerPromediosTemperaturas();
+            console.log('Resultado del método obtenerPromediosTemperaturas:', resultado);
+            
+            // Mostrar resultado en pantalla para verificar
+            var PromDiv = document.createElement('div');
+            PromDiv.style.marginTop = '20px'; 
+            PromDiv.style.width = '675px'; 
+            PromDiv.style.padding = '10px';
+            PromDiv.style.border = '1px solid green';
+            PromDiv.style.backgroundColor = '#e0ffe0';
+            PromDiv.textContent ='Promedio General de Temperaturas: ' + resultado.promedio_general + ' °C';
+            document.body.appendChild(PromDiv);
+        };
+
+        window.onload = main;
+    </script>
+
+
+</html>
