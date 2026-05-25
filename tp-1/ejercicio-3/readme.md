@@ -42,25 +42,22 @@ El componente mantiene un objeto de estado interno privado (this._eqData) que co
 `getData()`: Devuelve una copia del estado actual usando `JSON.parse(JSON.stringify(...))` para evitar que el código externo modifique accidentalmente el estado interno del componente.
 `setData(newData)`: Permite inyectar nuevos datos desde fuera. Llama a `_render()` para actualizar la interfaz visual instantaneamente, sin tener que recargar la página.
 
-## Renderizado dinámico con _render()
-Cada vez que cambian los datos (por interacción del usuario o por `setData()`), el método `_render()`:
-- Reconstruye todos los sliders basándose en `this._eqData.bands`
-- Actualiza las etiquetas de dB y el nombre del preset
-Esto asegura que la GUI siempre esté sincronizada con los datos.
-
-```js
-while (this.slidersArea.firstChild) {
-  this.slidersArea.removeChild(this.slidersArea.firstChild);
-}
-```
-```this.slidersArea.firstChild``` obtiene el primer hijo del contenedor
- - El bucle while se ejecuta mientras haya hijos
-```removeChild()``` elimina el primer hijo en cada iteración
- - Cuando no quedan más hijos, firstChild es null y el bucle termina
-
 ## Encapsulamiento con Shadow DOM
 Todo el HTML, CSS y JavaScript vive dentro de `this.attachShadow({ mode: 'open' })`. 
 - Los estilos no se filtran al resto de la página
 - El código externo no puede acceder accidentalmente a los elementos internos
 - El componente es portable y reutilizable en cualquier proyecto
+
+
+# CORRECCIONES hechas a pedido del profesor
+
+*  Se movió la ejecución de _buildDOM() y _render() al constructor para asegurar que la estructura visual se genere al instanciar el componente.
+
+* Eliminación de _attachEvents(): Se eliminó ese método. Ahora las asignaciones se hacen directamente en el connectedCallback.
+
+* Se  usa .bind(this) (this._onSliderInput.bind(this)).
+
+* se reemplazaron funciones anónimas porvmétodos  con nombres claros (_onSliderInput, _onSavePreset, etc.).
+
+* Se añadió en el disconnectedCallback la limpieza de los handlers (= null). 
 
