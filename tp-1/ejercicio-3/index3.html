@@ -12,7 +12,7 @@
   class GraphicEQ extends HTMLElement {
     constructor() {
       super();
-      this.attachShadow({ mode: 'open' }); //Encapsulación con Shadow DOM - mode open permite acceso desde fuera
+      this.attachShadow({ mode: 'open' });
 
       // Datos internos del ecualizador
       this._eqData = {
@@ -30,17 +30,22 @@
           { freq: '16.5k', value: 0 }
         ]
       };
+
+      // 1. El DOM se construye y se renderiza inicialmente en el constructor
+      this._buildDOM();
+      this._render();
     }
 
     connectedCallback() {
-      this._buildDOM(); // Construye la estructura del visual
-      this._attachEvents(); //vincula eventos a los elementos del visual
-      this._render(); //Dibuja el estado inicial
+      // Asociación de eventos usando .bind(this)
+      this.slidersArea.oninput = this._onSliderInput.bind(this);
+      this.saveBtn.onclick = this._onSavePreset.bind(this);
+      this.deleteBtn.onclick = this._onDeletePreset.bind(this);
+      this.presetInput.oninput = this._onPresetNameInput.bind(this);
     }
 
-       // Construcción del DOM usando document.createElement()
+    // Construcción del DOM usando document.createElement()
     _buildDOM() {
-    // Estilos encapsulados en Shadow DOM
       var style = document.createElement('style');
       style.textContent = `
         :host {
@@ -89,7 +94,7 @@
         }
         .btn:active { border-style: inset; }
       `;
-      this.shadowRoot.appendChild(style); //shadowRoot:contenedor de Shadow DOM, ahi se inyecta el contenido encapsulado
+      this.shadowRoot.appendChild(style);
 
       //Estructura principal
       this.frame = document.createElement('div');
@@ -128,7 +133,7 @@
       this.topControls.appendChild(this.presetInput);
       this.topControls.appendChild(this.saveBtn);
       this.topControls.appendChild(this.deleteBtn);
-      // Area principal (sliders y botones)
+    // Area principal (sliders y botones
       this.mainArea = document.createElement('div');
       this.mainArea.className = 'main-area';
 
@@ -200,52 +205,49 @@
       this.presetInput.value = this._eqData.presetName;
     }
 
-    // Actualización de datos al mover sliders
-    _attachEvents() {
-      var self = this; // Capturar referencia al componente
-      this.slidersArea.oninput = function(e) {
-        if (e.target.type === 'range') {
-          var idx = parseInt(e.target.dataset.index);
-          var val = parseInt(e.target.value);
-            // Actualiza el dato interno
-          self._eqData.bands[idx].value = val;
+    // NUEVOS MÉTODOS que reemplazan las funciones anónimas 
 
-           // Actualiza la etiqueta visual instantáneamente
-          var col = e.target.parentElement;
-          col.querySelector('.db-label').textContent = (val > 0 ? '+' : '') + val + 'dB';
+    // Actualizacion e datos al mover el slider
+    _onSliderInput(e) {
+      if (e.target.type === 'range') {
+        var idx = parseInt(e.target.dataset.index);
+        var val = parseInt(e.target.value);
+        
+        this._eqData.bands[idx].value = val;
+
+        var col = e.target.parentElement;
+        col.querySelector('.db-label').textContent = (val > 0 ? '+' : '') + val + 'dB';
+      }
+    }
+
+    // Guardar preset actual
+    _onSavePreset() {
+      var presetName = this.presetInput.value.trim();
+      if (presetName) {
+        console.log('Guardando preset:', presetName, this.getData());
+        alert('Preset "' + presetName + '" guardado');
+      }
+    }
+
+    // borrar preset
+    _onDeletePreset() {
+      var presetName = this.presetInput.value.trim();
+      if (presetName) {
+        console.log('Eliminando preset:', presetName);
+        alert('Preset "' + presetName + '" eliminado');
+        
+        this._eqData.presetName = 'Default';
+        for (var i = 0; i < this._eqData.bands.length; i++) {
+          this._eqData.bands[i].value = 0;
         }
-      };
-
-       // Guardar preset actual
-      this.saveBtn.onclick = function() {
-        var presetName = self.presetInput.value.trim();
-        if (presetName) {
-          console.log('Guardando preset:', presetName, self.getData());
-          alert('Preset "' + presetName + '" guardado');
-        }
-      };
-
-      //Eliminar preset
-      this.deleteBtn.onclick = function() {
-        var presetName = self.presetInput.value.trim();
-        if (presetName) {
-          console.log('Eliminando preset:', presetName);
-          alert('Preset "' + presetName + '" eliminado');
-          
-          self._eqData.presetName = 'Default';
-          
-          for (var i = 0; i < self._eqData.bands.length; i++) {
-            self._eqData.bands[i].value = 0;
-          }
-          
-          self._render();
-        }
-      };
-
-      //Sincroniza el nombre del preset
-      this.presetInput.oninput = function(e) {
-        self._eqData.presetName = e.target.value;
-      };
+        
+        this._render();
+      }
+    }
+     
+    //Sincroniza el nombre del preset
+    _onPresetNameInput(e) {
+      this._eqData.presetName = e.target.value;
     }
 
     // Obtiene el objeto de datos actual
@@ -261,7 +263,11 @@
     }
 
     disconnectedCallback() {
-      // Limpieza de eventos si es necesario
+      // Se limpian las referencias de los eventos al desconectar el elemento
+      this.slidersArea.oninput = null;
+      this.saveBtn.onclick = null;
+      this.deleteBtn.onclick = null;
+      this.presetInput.oninput = null;
     }
   }
 
@@ -274,5 +280,4 @@
 
   window.onload = main;
 </script>
-
 </html>
