@@ -9,12 +9,67 @@
 </body>
 
 <script>
+
+
+  // FUNCIÓN EXTERNA PARA CSS - Encapsulamiento del estilo
+
+  function GetEqualizerCSSStyle() {
+    return `
+      :host {
+        display: inline-block;
+        font-family: 'Tahoma', sans-serif;
+        font-size: 11px;
+        background-color: #d4d0c8;
+        border: 2px outset #ffffff;
+        padding: 2px;
+        box-sizing: border-box;
+      }
+      .window-frame { border: 1px solid #808080; padding: 4px; }
+      .title-bar {
+        background: linear-gradient(to right, #000080, #1084d0);
+        color: white;
+        padding: 2px 4px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+      .close-btn {
+        background: #c0c0c0; color: black; border: 1px outset white;
+        width: 16px; height: 14px; font-size: 9px; line-height: 10px;
+        text-align: center; cursor: pointer; padding: 0;
+      }
+      .top-controls { margin-bottom: 6px; display: flex; gap: 4px; }
+      .preset-input { width: 150px; }
+      .main-area { display: flex; justify-content: space-between; }
+      .sliders-area { display: flex; gap: 4px; background: #d4d0c8; padding: 10px 0; }
+      .slider-col { display: flex; flex-direction: column; align-items: center; width: 40px; position: relative; }
+      .slider-col input[type=range] {
+        -webkit-appearance: none; appearance: none;
+        width: 95px; height: 2px; background: white; border: 1px solid gray;
+        transform: rotate(-90deg); margin: 55px 0; cursor: pointer;
+      }
+      .slider-col input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 24px; height: 10px; background: #d4d0c8; border: 1px solid black;
+      }
+      .freq-label { position: absolute; top: -2px; font-size: 10px; }
+      .db-label { position: absolute; bottom: -2px; font-size: 10px; }
+      .buttons-area { display: flex; flex-direction: column; gap: 6px; justify-content: center; padding-left: 8px; }
+      .btn {
+        background: #d4d0c8; border: 2px outset white; padding: 4px 8px; cursor: pointer; min-width: 70px; font-family: inherit;
+      }
+      .btn:active { border-style: inset; }
+    `;
+  }
+
+  //Definicion del webcomponent  
   class GraphicEQ extends HTMLElement {
     constructor() {
       super();
       this.attachShadow({ mode: 'open' });
 
-      // Datos internos del ecualizador
+      // datos internos del ecualizador
       this._eqData = {
         presetName: 'Custom',
         bands: [
@@ -31,76 +86,17 @@
         ]
       };
 
-      // 1. El DOM se construye y se renderiza inicialmente en el constructor
-      this._buildDOM();
-      this._render();
-    }
-
-    connectedCallback() {
-      // Asociación de eventos usando .bind(this)
-      this.slidersArea.oninput = this._onSliderInput.bind(this);
-      this.saveBtn.onclick = this._onSavePreset.bind(this);
-      this.deleteBtn.onclick = this._onDeletePreset.bind(this);
-      this.presetInput.oninput = this._onPresetNameInput.bind(this);
-    }
-
-    // Construcción del DOM usando document.createElement()
-    _buildDOM() {
+      // Creación de elementos del DOM 
+      // Estilos encapsulados
       var style = document.createElement('style');
-      style.textContent = `
-        :host {
-          display: inline-block;
-          font-family: 'Tahoma', sans-serif;
-          font-size: 11px;
-          background-color: #d4d0c8;
-          border: 2px outset #ffffff;
-          padding: 2px;
-          box-sizing: border-box;
-        }
-        .window-frame { border: 1px solid #808080; padding: 4px; }
-        .title-bar {
-          background: linear-gradient(to right, #000080, #1084d0);
-          color: white;
-          padding: 2px 4px;
-          font-weight: bold;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 4px;
-        }
-        .close-btn {
-          background: #c0c0c0; color: black; border: 1px outset white;
-          width: 16px; height: 14px; font-size: 9px; line-height: 10px;
-          text-align: center; cursor: pointer; padding: 0;
-        }
-        .top-controls { margin-bottom: 6px; display: flex; gap: 4px; }
-        .preset-input { width: 150px; }
-        .main-area { display: flex; justify-content: space-between; }
-        .sliders-area { display: flex; gap: 4px; background: #d4d0c8; padding: 10px 0; }
-        .slider-col { display: flex; flex-direction: column; align-items: center; width: 40px; position: relative; }
-        .slider-col input[type=range] {
-          -webkit-appearance: none; appearance: none;
-          width: 95px; height: 2px; background: white; border: 1px solid gray;
-          transform: rotate(-90deg); margin: 55px 0; cursor: pointer;
-        }
-        .slider-col input[type=range]::-webkit-slider-thumb {
-          -webkit-appearance: none; width: 24px; height: 10px; background: #d4d0c8; border: 1px solid black;
-        }
-        .freq-label { position: absolute; top: -2px; font-size: 10px; }
-        .db-label { position: absolute; bottom: -2px; font-size: 10px; }
-        .buttons-area { display: flex; flex-direction: column; gap: 6px; justify-content: center; padding-left: 8px; }
-        .btn {
-          background: #d4d0c8; border: 2px outset white; padding: 4px 8px; cursor: pointer; min-width: 70px; font-family: inherit;
-        }
-        .btn:active { border-style: inset; }
-      `;
+      style.textContent = GetEqualizerCSSStyle();
       this.shadowRoot.appendChild(style);
 
-      //Estructura principal
+      // Estructura Principal
       this.frame = document.createElement('div');
       this.frame.className = 'window-frame';
 
-      //Barra de titulo
+      // Barra de Título
       this.titleBar = document.createElement('div');
       this.titleBar.className = 'title-bar';
       this.titleText = document.createElement('span');
@@ -111,7 +107,7 @@
       this.titleBar.appendChild(this.titleText);
       this.titleBar.appendChild(this.closeBtn);
 
-      //Selectores de preset
+      // Selectores de preset
       this.topControls = document.createElement('div');
       this.topControls.className = 'top-controls';
       this.presetInput = document.createElement('input');
@@ -129,17 +125,18 @@
       this.deleteBtn.textContent = '✖';
       this.deleteBtn.style.padding = '2px 6px';
       this.deleteBtn.title = 'Eliminar preset';
-
+      
       this.topControls.appendChild(this.presetInput);
       this.topControls.appendChild(this.saveBtn);
       this.topControls.appendChild(this.deleteBtn);
-    // Area principal (sliders y botones
+      
+      // Area principal (sliders y botones)
       this.mainArea = document.createElement('div');
       this.mainArea.className = 'main-area';
 
       this.slidersArea = document.createElement('div');
-      this.slidersArea.className = 'sliders-area'; 
-    
+      this.slidersArea.className = 'sliders-area';
+
       this.buttonsArea = document.createElement('div');
       this.buttonsArea.className = 'buttons-area';
       this.btnOK = document.createElement('button'); 
@@ -168,11 +165,69 @@
       this.shadowRoot.appendChild(this.frame);
     }
 
-    // Renderizado visual basado en this._eqData
-    _render() {
+    connectedCallback() {
+      this._attachEvents();
+      this._update(); // Llamada al método renombrado
+    }
+
+    // Configuración de eventos
+    _attachEvents() {
+      this.slidersArea.oninput = this._onSliderInput.bind(this);
+      this.saveBtn.onclick = this._onSavePreset.bind(this);
+      this.deleteBtn.onclick = this._onDeletePreset.bind(this);
+      this.presetInput.oninput = this._onPresetNameInput.bind(this);
+    }
+
+    //  Actualizacion de datos al mover el slider
+    _onSliderInput(e) {
+      if (e.target.type === 'range') {
+        var idx = parseInt(e.target.dataset.index);
+        var val = parseInt(e.target.value);
+        
+        this._eqData.bands[idx].value = val;
+        
+        var col = e.target.parentElement;
+        col.querySelector('.db-label').textContent = (val > 0 ? '+' : '') + val + 'dB';
+      }
+    }
+
+    //Guardar preset actual
+    _onSavePreset() {
+      var presetName = this.presetInput.value.trim();
+      if (presetName) {
+        console.log('Guardando preset:', presetName, this.getData());
+        alert('Preset "' + presetName + '" guardado');
+      }
+    }
+
+    // Eliminar preset
+    _onDeletePreset() {
+      var presetName = this.presetInput.value.trim();
+      if (presetName) {
+        console.log('Eliminando preset:', presetName);
+        alert('Preset "' + presetName + '" eliminado');
+        
+        this._eqData.presetName = 'Default';
+        for (var i = 0; i < this._eqData.bands.length; i++) {
+          this._eqData.bands[i].value = 0;
+        }
+        
+        this._update();
+      }
+    }
+
+    //Sincronizar nombre del preset
+    _onPresetNameInput(e) {
+      this._eqData.presetName = e.target.value;
+    }
+
+    // Actualización visual de sliders y etiquetas
+    // antes metodo render()
+    _update() {
       while (this.slidersArea.firstChild) {
         this.slidersArea.removeChild(this.slidersArea.firstChild);
       }
+      
       this.sliderInputs = [];
 
       for (var i = 0; i < this._eqData.bands.length; i++) {
@@ -205,71 +260,28 @@
       this.presetInput.value = this._eqData.presetName;
     }
 
-    // NUEVOS MÉTODOS que reemplazan las funciones anónimas 
-
-    // Actualizacion e datos al mover el slider
-    _onSliderInput(e) {
-      if (e.target.type === 'range') {
-        var idx = parseInt(e.target.dataset.index);
-        var val = parseInt(e.target.value);
-        
-        this._eqData.bands[idx].value = val;
-
-        var col = e.target.parentElement;
-        col.querySelector('.db-label').textContent = (val > 0 ? '+' : '') + val + 'dB';
-      }
-    }
-
-    // Guardar preset actual
-    _onSavePreset() {
-      var presetName = this.presetInput.value.trim();
-      if (presetName) {
-        console.log('Guardando preset:', presetName, this.getData());
-        alert('Preset "' + presetName + '" guardado');
-      }
-    }
-
-    // borrar preset
-    _onDeletePreset() {
-      var presetName = this.presetInput.value.trim();
-      if (presetName) {
-        console.log('Eliminando preset:', presetName);
-        alert('Preset "' + presetName + '" eliminado');
-        
-        this._eqData.presetName = 'Default';
-        for (var i = 0; i < this._eqData.bands.length; i++) {
-          this._eqData.bands[i].value = 0;
-        }
-        
-        this._render();
-      }
-    }
-     
-    //Sincroniza el nombre del preset
-    _onPresetNameInput(e) {
-      this._eqData.presetName = e.target.value;
-    }
-
-    // Obtiene el objeto de datos actual
+    //Obtener datos
     getData() {
       return JSON.parse(JSON.stringify(this._eqData));
     }
 
-    // Asigna nuevos datos y refresca la UI 
+    //  Asigna nuevos datos y refresca la UI 
     setData(newData) {
       if (!newData || !newData.bands) return;
       this._eqData = JSON.parse(JSON.stringify(newData));
-      this._render();
+      this._update();
     }
 
     disconnectedCallback() {
-      // Se limpian las referencias de los eventos al desconectar el elemento
+       // Limpieza de eventos para evitar memory leaks
       this.slidersArea.oninput = null;
       this.saveBtn.onclick = null;
       this.deleteBtn.onclick = null;
       this.presetInput.oninput = null;
     }
-  }
+  
+}
+
 
   customElements.define('graphic-eq', GraphicEQ);
 
