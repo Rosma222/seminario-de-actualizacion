@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Grafico de temperaturas maximas</title>
+</head>
+
+<body>
+</body>
+
+<script>
+
+
+ // Estilos encapsulados
+    function crearEstilos() {
+        const estilo = document.createElement('style');
+        estilo.textContent = `
+            :host { display: block; font-family: sans-serif; }
+            .grafico { display: flex; height: 200px; }
+            .eje-y { display: flex; flex-direction: column; justify-content: space-between; height: 100%; margin-right: 10px; padding: 10px 0; color: #555; font-size: 12px; }
+            .valor { text-align: right; margin: 4px 0; }
+            .contenedor { display: flex; align-items: flex-end; flex: 1; height: 100%; gap: 15px; border-left: 2px solid #333; border-bottom: 2px solid #333; padding: 10px 10px 10px 0; }
+            .barra-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; }
+            .barra { width: 100%; background-color: #3498db; border-radius: 4px 4px 0 0; }
+            .etiqueta { font-size: 12px; margin-top: 8px; text-align: center; color: #555; }
+        `;
+        return estilo;
+    }
+
+ //definicion del webcomponent
+class GraficoBarras extends HTMLElement {
+     constructor() {
+        super();
+        // Encapsulación mediante Shadow DOM
+        this.root = this.attachShadow({ mode: 'open' });
+        this.chartData = [];
+    }
+
+    connectedCallback() {
+        // Se ejecuta cuando el elemento se agrega al DOM.
+        this.render();
+    }
+
+    disconnectedCallback() {
+        // Se ejecuta cuando el elemento se quita del DOM.
+        // limpieza de memoria o eventos
+        this.root.textContent = '';
+    }
+
+    // Propiedad para recibir datos
+    set data(valores) {
+        this.chartData = valores;
+        this.render();
+    }
+
+    get data() {
+        return this.chartData;
+    }
+ 
+
+    // Cálculo del valor máximo para escalar las barras
+    obtenerMaximo() {
+        let maximo = 0;
+        for (let i = 0; i < this.chartData.length; i++) {
+            if (this.chartData[i].value > maximo) {
+                maximo = this.chartData[i].value;
+            }
+        }
+        return maximo;
+    }
+
+    // Construcción de cada barra
+    crearBarra(item, maximo) {
+        const wrapper = document.createElement('div');
+        wrapper.setAttribute('class', 'barra-wrapper');
+
+        const barra = document.createElement('div');
+        barra.setAttribute('class', 'barra');
+        
+        // Cálculo de la altura
+        const porcentaje = maximo > 0 ? (item.value / maximo) * 100 : 0;
+        barra.style.height = porcentaje + '%';
+
+        const etiqueta = document.createElement('div');
+        etiqueta.setAttribute('class', 'etiqueta');
+        etiqueta.textContent = item.label;
+
+        wrapper.appendChild(barra);
+        wrapper.appendChild(etiqueta);
+        return wrapper;
+    }
+
+    // Renderizado del componente
+    render() {
+        this.root.textContent = '';
+        this.root.appendChild(crearEstilos());
+
+        const maximo = this.obtenerMaximo();
+
+        const grafico = document.createElement('div');
+        grafico.setAttribute('class', 'grafico');
+
+        const ejeY = document.createElement('div');
+        ejeY.setAttribute('class', 'eje-y');
+        const valores = [maximo, Math.round(maximo * 0.75), Math.round(maximo * 0.5), Math.round(maximo * 0.25), 0];
+        for (let i = 0; i < valores.length; i++) {
+            const valorElemento = document.createElement('div');
+            valorElemento.setAttribute('class', 'valor');
+            valorElemento.textContent = valores[i];
+            ejeY.appendChild(valorElemento);
+        }
+
+        const contenedor = document.createElement('div');
+        contenedor.setAttribute('class', 'contenedor');
+
+        for (let i = 0; i < this.chartData.length; i++) {
+            const barraElemento = this.crearBarra(this.chartData[i], maximo);
+            contenedor.appendChild(barraElemento);
+        }
+
+        grafico.appendChild(ejeY);
+        grafico.appendChild(contenedor);
+        this.root.appendChild(grafico);
+    }
+}
+
+// Registro del componente 
+customElements.define('grafico-barras', GraficoBarras);
+
+
+function main() {   
+    var miGraficoBarras = new GraficoBarras();
+    document.body.appendChild(miGraficoBarras);
+
+    miGraficoBarras.data = [
+        { label: 'Enero', value: 39},
+        { label: 'Febrero', value: 40 },
+        { label: 'Marzo', value: 36 },
+        { label: 'Abril', value: 25 },
+        { label: 'Mayo', value: 24 },
+        { label: 'Junio', value: 18 },
+        { label: 'Julio', value: 16 },
+        { label: 'Agosto', value: 15 },
+        { label: 'Septiembre', value: 25 },
+        { label: 'Octubre', value: 29 },
+        { label: 'Noviembre', value: 25 },
+        { label: 'Diciembre', value: 38 }
+    ];
+
+  }
+
+ window.onload = main;
+
+
+ 
+
+</script>
+</html>

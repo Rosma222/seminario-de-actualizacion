@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>WCView</title>
+</head>
+<body>
+
+<wc-view></wc-view>
+
+<script>
+
+// MODELO: representa los datos, no conoce a la vista ni al controlador
+class WCData {
+    constructor() {
+        this.data = [10, 20, 30];
+    }
+    getData() {
+        return this.data;
+    }
+    setData(data) {
+        this.data = data;
+    }
+}
+
+
+// CONTROLADOR: intermedia entre el modelo y la vista
+class WCEventHandler {
+    constructor(dataModel) {
+        this.dataModel = dataModel;  
+        this.view = null;
+    }
+    setView(view) {
+        this.view = view;
+    }
+    onRequestData() {
+        return this.dataModel.getData();  // obtiene los datos del modelo
+    }
+    onChangedData() {
+       var nuevosDatos = [];
+
+        for(let i = 0; i < 5; i++) {
+            nuevosDatos.push(
+                Math.floor(Math.random() * 100) // genera un número aleatorio entre 0 y 99
+            );
+        }
+
+        this.dataModel.setData(nuevosDatos); // actualiza el modelo con los nuevos datos
+        if(this.view !== null) {
+            this.view.actualizarVista();
+        }
+    }
+}
+
+
+// VISTA: representa la interfaz grafica, no conoce al modelo ni al controlador
+class WCView extends HTMLElement {
+    constructor() {
+        super();
+        this.root = this.attachShadow({mode:'open'});
+        this.dataModel = new WCData();
+        this.eventHandler = new WCEventHandler(this.dataModel);
+        this.eventHandler.setView(this);
+        this.botonClick = this.botonClick.bind(this);
+    }
+
+    connectedCallback() {
+        this.render();
+        this.boton = this.root.querySelector('button');
+        this.boton.onclick = this.botonClick;
+    }
+
+    disconnectedCallback() {
+        if(this.boton) {
+            this.boton.onclick = null;
+        }
+        this.root.textContent = '';
+    }
+
+    botonClick() {
+        this.eventHandler.onChangedData();
+    }
+
+    actualizarVista() {
+        this.render();
+    }
+
+    render() {
+        this.root.textContent = '';
+        var contenedor = document.createElement('div');
+        var lista =  document.createElement('ul');
+        var datos = this.eventHandler.onRequestData();
+
+        for(let i = 0; i < datos.length; i++) {
+            var item = document.createElement('li');
+            item.textContent = datos[i];
+            lista.appendChild(item);
+        }
+
+        var boton = document.createElement('button');
+
+        boton.textContent = 'Update';
+        contenedor.appendChild(lista);
+        contenedor.appendChild(boton);
+        this.root.appendChild(contenedor);
+    }
+}
+
+customElements.define('wc-view', WCView );
+
+</script>
+
+</body>
+</html>
