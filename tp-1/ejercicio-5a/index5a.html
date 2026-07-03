@@ -22,10 +22,12 @@ class FacturaAFIPForm extends HTMLElement {
     this.shadow = this.attachShadow({ mode: 'open' }); // Creamos el Shadow DOM para encapsular el componente
     this.items = [];    // Array para almacenar los items 
     this.aplicarEstilos();// Aplicamos estilos
+    this.crearFormulario();
   }
   
   connectedCallback() {
-    this.crearFormulario();   // Creamos el formulario cuando el componente está en el DOM
+    this.btnAgregarItem.onclick = this.agregarItem.bind(this);
+    this.btnFacturar.onclick = this.generarFactura.bind(this);
   }
   
   disconnectedCallback() {   // Limpieza si fuera necesaria
@@ -95,11 +97,11 @@ class FacturaAFIPForm extends HTMLElement {
     seccionItems.appendChild(this.itemsContainer);
     
     // Botón de agregar item
-    var btnAgregarItem = document.createElement('button');
-    btnAgregarItem.type = 'button';
-    btnAgregarItem.textContent = '+ Agregar Item';
-    btnAgregarItem.onclick = this.agregarItem.bind(this);
-    seccionItems.appendChild(btnAgregarItem);
+    this.btnAgregarItem = document.createElement('button');
+    this.btnAgregarItem.type = 'button';
+    this.btnAgregarItem.textContent = '+ Agregar Item';
+    
+    seccionItems.appendChild(this.btnAgregarItem);
     seccionItems.appendChild(document.createElement('br'));
     
     this.contenedor.appendChild(seccionItems);
@@ -155,12 +157,12 @@ class FacturaAFIPForm extends HTMLElement {
     this.contenedor.appendChild(seccionTotales);
     
     // BOTÓN FACTURAR
-    var btnFacturar = document.createElement('button');
-    btnFacturar.type = 'button';
-    btnFacturar.textContent = 'Generar Factura';
-    btnFacturar.className = 'btn-facturar';
-    btnFacturar.onclick = this.generarFactura.bind(this);
-    this.contenedor.appendChild(btnFacturar);
+    this.btnFacturar = document.createElement('button');
+    this.btnFacturar.type = 'button';
+    this.btnFacturar.textContent = 'Generar Factura';
+    this.btnFacturar.className = 'btn-facturar';
+    
+    this.contenedor.appendChild(this.btnFacturar);
     
     this.shadow.appendChild(this.contenedor); // Agrega el contenedor al shadow DOM
     this.agregarItem();  // Agregamos un item 
@@ -366,105 +368,98 @@ class FacturaAFIPForm extends HTMLElement {
   
   // Generar el HTML de la factura
   generarHTMLFactura(datos) {
-    var lineas = [];
-    
-    lineas.push('<!DOCTYPE html>');
-    lineas.push('<html lang="es">');
-    lineas.push('<head>');
-    lineas.push('<meta charset="UTF-8">');
-    lineas.push('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
-    lineas.push('<title>Factura ' + datos.tipoFactura + ' - ' + datos.numeroFactura + '</title>');
-    lineas.push('<style>');
-    lineas.push('body { font-family: Arial, sans-serif; margin: 20px; }');
-    lineas.push('.factura { max-width: 800px; margin: 0 auto; border: 2px solid #000; padding: 20px; }');
-    lineas.push('.header { display: flex; justify-content: space-between; margin-bottom: 20px; }');
-    lineas.push('.logo { font-size: 24px; font-weight: bold; }');
-    lineas.push('.tipo-factura { font-size: 32px; font-weight: bold; border: 3px solid #000; padding: 10px; }');
-    lineas.push('.datos-empresa { margin-bottom: 20px; }');
-    lineas.push('.datos-cliente { background-color: #f0f0f0; padding: 10px; margin-bottom: 20px; }');
-    lineas.push('table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }');
-    lineas.push('th, td { border: 1px solid #000; padding: 8px; text-align: left; }');
-    lineas.push('th { background-color: #e0e0e0; }');
-    lineas.push('.totales { text-align: right; }');
-    lineas.push('.totales td { padding: 5px 10px; }');
-    lineas.push('.totales .total-final { font-size: 18px; font-weight: bold; }');
-    lineas.push('</style>');
-    lineas.push('</head>');
-    lineas.push('<body>');
-    lineas.push('<div class="factura">');
-    
-    // Header 
-    lineas.push('<div class="header">');
-    lineas.push('<div class="logo">AFIP</div>');
-    lineas.push('<div class="tipo-factura">' + datos.tipoFactura + '</div>');
-    lineas.push('</div>');
-    
-    // Datos 
-    lineas.push('<div class="datos-empresa">');
-    lineas.push('<strong>FACTURA</strong><br>');
-    lineas.push('Punto de Venta: 0002<br>');
-    lineas.push('Nro. de Factura: ' + datos.numeroFactura + '<br>');
-    lineas.push('Fecha de Emisión: ' + datos.fechaEmision + '<br>');
-    lineas.push('CUIT: ' + datos.cuit + '<br>');
-    lineas.push('</div>');
-    
-    // Datos cliente
-    lineas.push('<div class="datos-cliente">');
-    lineas.push('<strong>Datos del Cliente:</strong><br>');
-    lineas.push('Razón Social: ' + datos.razonSocial + '<br>');
-    lineas.push('Domicilio: ' + datos.domicilio + '<br>');
-    lineas.push('CUIT: ' + datos.cuit + '<br>');
-    lineas.push('</div>');
-    
-    // items
-    lineas.push('<table>');
-    lineas.push('<thead>');
-    lineas.push('<tr>');
-    lineas.push('<th>Código</th>');
-    lineas.push('<th>Descripción</th>');
-    lineas.push('<th>Cantidad</th>');
-    lineas.push('<th>Precio Unitario</th>');
-    lineas.push('<th>Subtotal</th>');
-    lineas.push('</tr>');
-    lineas.push('</thead>');
-    lineas.push('<tbody>');
-    
+    // Armamos las filas de items aparte, porque necesitan un for
+    var filasItems = '';
     for (var i = 0; i < datos.items.length; i++) {
       var item = datos.items[i];
       var subtotalItem = item.cantidad * item.precioUnitario;
-      lineas.push('<tr>');
-      lineas.push('<td>' + item.codigo + '</td>');
-      lineas.push('<td>' + item.descripcion + '</td>');
-      lineas.push('<td>' + item.cantidad + '</td>');
-      lineas.push('<td>$' + parseFloat(item.precioUnitario).toFixed(2) + '</td>');
-      lineas.push('<td>$' + subtotalItem.toFixed(2) + '</td>');
-      lineas.push('</tr>');
+      filasItems += `
+      <tr>
+        <td>${item.codigo}</td>
+        <td>${item.descripcion}</td>
+        <td>${item.cantidad}</td>
+        <td>$${parseFloat(item.precioUnitario).toFixed(2)}</td>
+        <td>$${subtotalItem.toFixed(2)}</td>
+      </tr>`;
     }
+
     
-    lineas.push('</tbody>');
-    lineas.push('</table>');
-    
-    // Totales
-    lineas.push('<table class="totales">');
-    lineas.push('<tr>');
-    lineas.push('<td>Subtotal:</td>');
-    lineas.push('<td>$' + datos.subtotal + '</td>');
-    lineas.push('</tr>');
-    lineas.push('<tr>');
-    lineas.push('<td>IVA (21%):</td>');
-    lineas.push('<td>$' + datos.impuestos + '</td>');
-    lineas.push('</tr>');
-    lineas.push('<tr class="total-final">');
-    lineas.push('<td>TOTAL:</td>');
-    lineas.push('<td>$' + datos.total + '</td>');
-    lineas.push('</tr>');
-    lineas.push('</table>');
-    
-    lineas.push('</div>');
-    lineas.push('</body>');
-    lineas.push('</html>');
-    
-    return lineas.join('');
+    var cierre = '</' + 'body>\n</' + 'html>';
+
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factura ${datos.tipoFactura} - ${datos.numeroFactura}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .factura { max-width: 800px; margin: 0 auto; border: 2px solid #000; padding: 20px; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .logo { font-size: 24px; font-weight: bold; }
+    .tipo-factura { font-size: 32px; font-weight: bold; border: 3px solid #000; padding: 10px; }
+    .datos-empresa { margin-bottom: 20px; }
+    .datos-cliente { background-color: #f0f0f0; padding: 10px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+    th { background-color: #e0e0e0; }
+    .totales { text-align: right; }
+    .totales td { padding: 5px 10px; }
+    .totales .total-final { font-size: 18px; font-weight: bold; }
+  </style>
+</head>
+<div class="factura">
+  <div class="header">
+    <div class="logo">AFIP</div>
+    <div class="tipo-factura">${datos.tipoFactura}</div>
+  </div>
+
+  <div class="datos-empresa">
+    <strong>FACTURA</strong><br>
+    Punto de Venta: 0002<br>
+    Nro. de Factura: ${datos.numeroFactura}<br>
+    Fecha de Emisión: ${datos.fechaEmision}<br>
+    CUIT: ${datos.cuit}<br>
+  </div>
+
+  <div class="datos-cliente">
+    <strong>Datos del Cliente:</strong><br>
+    Razón Social: ${datos.razonSocial}<br>
+    Domicilio: ${datos.domicilio}<br>
+    CUIT: ${datos.cuit}<br>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Cantidad</th>
+        <th>Precio Unitario</th>
+        <th>Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>${filasItems}
+    </tbody>
+  </table>
+
+  <table class="totales">
+    <tr>
+      <td>Subtotal:</td>
+      <td>$${datos.subtotal}</td>
+    </tr>
+    <tr>
+      <td>IVA (21%):</td>
+      <td>$${datos.impuestos}</td>
+    </tr>
+    <tr class="total-final">
+      <td>TOTAL:</td>
+      <td>$${datos.total}</td>
+    </tr>
+  </table>
+</div>
+${cierre}`;
   }
   
   // Método para aplicar estilos 
