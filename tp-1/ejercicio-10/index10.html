@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Visor de CSV Gráfico</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Zona de Drop */
+        .zona-drop {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            z-index: 100;
+            transition: background 0.3s;
+        }
+        .zona-drop.activa { background: #1e3a5f; }
+        .zona-drop.oculta { display: none; }
+
+        .borde-drop {
+            position: fixed;
+            inset: 20px;
+            border: 3px dashed #334155;
+            border-radius: 24px;
+            pointer-events: none;
+            transition: border-color 0.3s;
+        }
+        .zona-drop.activa .borde-drop { border-color: #38bdf8; }
+
+        .icono-drop {
+            font-size: 80px;
+            margin-bottom: 24px;
+            animation: flotar 2.5s ease-in-out infinite;
+            user-select: none;
+        }
+        @keyframes flotar {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-14px); }
+        }
+
+        .texto-drop {
+            font-size: clamp(28px, 5vw, 52px);
+            font-weight: 800;
+            color: #f1f5f9;
+            text-align: center;
+            pointer-events: none;
+            user-select: none;
+        }
+        .texto-drop-acento { color: #38bdf8; }
+
+        .subtexto-drop {
+            margin-top: 16px;
+            font-size: 15px;
+            color: #64748b;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        /*  Panel gráfico */
+        .panel-grafico {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            min-height: 100vh;
+            padding: 32px;
+            background: #0f172a;
+        }
+        .panel-grafico.visible { display: flex; }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .panel-titulo {
+            font-size: 22px;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+        .nombre-archivo {
+            display: block;
+            font-size: 13px;
+            font-weight: 400;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .btn-nuevo {
+            padding: 9px 20px;
+            background: #1e293b;
+            color: #38bdf8;
+            border: 1.5px solid #38bdf8;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-nuevo:hover { background: #0f2942; }
+
+        .selector-wrap {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .chip-serie {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 2px solid transparent;
+            cursor: pointer;
+            background: #1e293b;
+            color: #94a3b8;
+        }
+        .chip-serie.activo { color: #fff; }
+
+        .chart-wrap {
+            flex: 1;
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            min-height: 400px;
+        }
+
+        .mensaje-error {
+            display: none;
+            background: #7f1d1d;
+            color: #fca5a5;
+            padding: 14px 20px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+</body>
+
+
+<script>
+    var COLORES = [
+        '#f97316','#facc15','#4ade80','#22d3ee',
+        '#818cf8','#f472b6','#fb7185','#a78bfa',
+        '#34d399','#60a5fa'
+    ];
+
+    class VisorCsvClima extends HTMLElement {
+        constructor() {
+            super();
+            
+            // Solo inicialización de propiedades 
+            this._chart       = null;
+            this._datos       = null;
+            this._chips       = [];
+            this._zonaDrop    = null;
+            this._panelGraf   = null;
+            this._spanNombre  = null;
+            this._divSelector = null;
+            this._msgError    = null;
+            this._canvas      = null;
+            this._btnNuevo    = null;
+        }
+
+        connectedCallback() {
+            //  Construir DOM (render)
+            this._construirDOM();
+            
+            //  asociación de manejadores de eventos
+            var self = this;
+
+            // Evento del botón "Cargar otro CSV"
+            this._btnNuevo.onclick = function() { 
+                self._mostrarZonaDrop(); 
+            };
+
+            // Eventos de Drag & Drop
+            document.ondragover = function(e) { 
+                e.preventDefault(); 
+            };
+            document.ondrop = function(e) { 
+                e.preventDefault(); 
+            };
+
+            this._zonaDrop.ondragenter = function() {
+                self._zonaDrop.className = 'zona-drop activa';
+            };
+            this._zonaDrop.ondragover = function() {
+                self._zonaDrop.className = 'zona-drop activa';
+            };
+            this._zonaDrop.ondragleave = function() {
+                self._zonaDrop.className = 'zona-drop';
+            };
+            this._zonaDrop.ondrop = function(e) {
+                e.preventDefault();
+                self._zonaDrop.className = 'zona-drop';
+                var archivo = e.dataTransfer.files[0];
+                if (archivo) {
+                    self._leerCSV(archivo);
+                }
+            };
+        }
+
+        // Construcción del DOM
+        _construirDOM() {
+            var self = this;
+
+            // Zona drop
+            var zona = document.createElement('div');
+            zona.className = 'zona-drop';
+            this._zonaDrop = zona;
+
+            var borde = document.createElement('div');
+            borde.className = 'borde-drop';
+            zona.appendChild(borde);
+
+            var icono = document.createElement('div');
+            icono.className = 'icono-drop';
+            icono.textContent = '📂';
+            zona.appendChild(icono);
+
+            var textoDrop = document.createElement('div');
+            textoDrop.className = 'texto-drop';
+            textoDrop.appendChild(document.createTextNode('Arrastre un archivo aquí'));
+            zona.appendChild(textoDrop);
+
+            var subtexto = document.createElement('div');
+            subtexto.className = 'subtexto-drop';
+            subtexto.textContent = 'Cargue un archivo CSV para ver su contenido';
+            zona.appendChild(subtexto);
+
+            this.appendChild(zona);
+
+            // Panel gráfico
+            var panel = document.createElement('div');
+            panel.className = 'panel-grafico';
+            this._panelGraf = panel;
+
+            var header = document.createElement('div');
+            header.className = 'panel-header';
+
+            var divTitulo = document.createElement('div');
+            divTitulo.className = 'panel-titulo';
+            divTitulo.textContent = 'Datos Meteorológicos';
+
+            var spanNombre = document.createElement('small');
+            spanNombre.className = 'nombre-archivo';
+            spanNombre.textContent = '—';
+            this._spanNombre = spanNombre;
+            divTitulo.appendChild(spanNombre);
+            header.appendChild(divTitulo);
+
+            var btnNuevo = document.createElement('button');
+            btnNuevo.className = 'btn-nuevo';
+            btnNuevo.textContent = '＋ Cargar otro CSV';
+            this._btnNuevo = btnNuevo;
+            header.appendChild(btnNuevo);
+
+            panel.appendChild(header);
+
+            var msgError = document.createElement('div');
+            msgError.className = 'mensaje-error';
+            this._msgError = msgError;
+            panel.appendChild(msgError);
+
+            var divSelector = document.createElement('div');
+            divSelector.className = 'selector-wrap';
+            this._divSelector = divSelector;
+            panel.appendChild(divSelector);
+
+            var chartWrap = document.createElement('div');
+            chartWrap.className = 'chart-wrap';
+            var canvas = document.createElement('canvas');
+            this._canvas = canvas;
+            chartWrap.appendChild(canvas);
+            panel.appendChild(chartWrap);
+
+            this.appendChild(panel);
+        }
+
+        // Lectura del archivo y manejo de errores
+        _leerCSV(archivo) {
+            var self = this;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var datos = self._parsearCSV(e.target.result);
+                    self._datos = datos;
+                    self._spanNombre.textContent = archivo.name;
+                    self._ocultarError();
+                    self._mostrarGrafico(datos);
+                } catch(err) {
+                    self._mostrarError('No se pudo leer el CSV: ' + err.message);
+                    self._mostrarZonaDrop();
+                }
+            };
+            reader.readAsText(archivo, 'UTF-8');
+        }
+
+        // Parser CSV 
+        _parsearCSV(texto) {
+            texto = texto.replace(/^\uFEFF/, '');
+            var lineas = texto.split(/\r?\n/);
+            var lineasFiltradas = [];
+            for (var i = 0; i < lineas.length; i++) {
+                if (lineas[i].trim() !== '') {
+                    lineasFiltradas.push(lineas[i]);
+                }
+            }
+            if (lineasFiltradas.length < 2) {
+                throw new Error('El archivo no tiene datos suficientes.');
+            }
+
+            var encabezados = this._parsearFila(lineasFiltradas[0]);
+            var meses = [];
+            for (var m = 1; m < encabezados.length - 1; m++) {
+                meses.push(encabezados[m]);
+            }
+
+            var series = [];
+            for (var r = 1; r < lineasFiltradas.length; r++) {
+                var cols = this._parsearFila(lineasFiltradas[r]);
+                if (cols.length < 2) continue;
+                var label = cols[0];
+                var valores = [];
+                for (var c = 1; c < cols.length - 1; c++) {
+                    var v = parseFloat(cols[c]);
+                    valores.push(isNaN(v) ? null : v);
+                }
+                series.push({ label: label, valores: valores });
+            }
+
+            return { meses: meses, series: series };
+        }
+
+        _parsearFila(linea) {
+            var resultado = [];
+            var actual = '';
+            var dentroComillas = false;
+            for (var i = 0; i < linea.length; i++) {
+                var c = linea[i];
+                if (c === '"') {
+                    if (dentroComillas && linea[i + 1] === '"') {
+                        actual += '"';
+                        i++;
+                    } else {
+                        dentroComillas = !dentroComillas;
+                    }
+                } else if (c === ',' && !dentroComillas) {
+                    resultado.push(actual);
+                    actual = '';
+                } else {
+                    actual += c;
+                }
+            }
+            resultado.push(actual);
+            return resultado;
+        }
+
+        // Mostrar gráfico 
+        _mostrarGrafico(datos) {
+            var self = this;
+
+            this._zonaDrop.className  = 'zona-drop oculta';
+            this._panelGraf.className = 'panel-grafico visible';
+
+            // Limpiar chips anteriores
+            while (this._divSelector.firstChild) {
+                this._divSelector.removeChild(this._divSelector.firstChild);
+            }
+            this._chips = [];
+
+            // Crear un chip por cada serie
+            for (var i = 0; i < datos.series.length; i++) {
+                var chip = this._crearChip(datos.series[i].label, i, datos);
+                this._divSelector.appendChild(chip);
+                this._chips.push(chip);
+            }
+
+            if (this._chart) {
+                this._chart.destroy();
+                this._chart = null;
+            }
+
+            var ctx = this._canvas.getContext('2d');
+            this._chart = new Chart(ctx, {
+                type: 'line',
+                data: this._buildChartData(datos),
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#cbd5e1', font: { size: 12 } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor:      '#f1f5f9',
+                            bodyColor:       '#94a3b8',
+                            borderColor:     '#334155',
+                            borderWidth:     1
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+                        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+                    }
+                }
+            });
+        }
+
+        _crearChip(label, idx, datos) {
+            var self  = this;
+            var color = COLORES[idx % COLORES.length];
+
+            var chip = document.createElement('button');
+            chip.textContent  = label;
+            chip.style.borderColor = color;
+
+            if (idx === 0) {
+                chip.className = 'chip-serie activo';
+                chip.style.backgroundColor = color;
+            } else {
+                chip.className = 'chip-serie';
+            }
+
+            // Evento del chip
+            chip.onclick = function() {
+                if (chip.className.indexOf('activo') !== -1) {
+                    chip.className = 'chip-serie';
+                    chip.style.backgroundColor = '#1e293b';
+                } else {
+                    chip.className = 'chip-serie activo';
+                    chip.style.backgroundColor = color;
+                }
+                self._actualizarChart(datos);
+            };
+
+            return chip;
+        }
+
+        _buildChartData(datos) {
+            var datasets = [];
+            for (var i = 0; i < datos.series.length; i++) {
+                if (this._chips[i] && this._chips[i].className.indexOf('activo') !== -1) {
+                    var color = COLORES[i % COLORES.length];
+                    datasets.push({
+                        label:           datos.series[i].label,
+                        data:            datos.series[i].valores,
+                        borderColor:     color,
+                        backgroundColor: color + '22',
+                        tension:         0.3,
+                        fill:            false,
+                        pointRadius:     4,
+                        pointHoverRadius:6
+                    });
+                }
+            }
+            return { labels: datos.meses, datasets: datasets };
+        }
+
+        _actualizarChart(datos) {
+            if (!this._chart) return;
+            this._chart.data = this._buildChartData(datos);
+            this._chart.update();
+        }
+
+        // Helpers 
+        _mostrarZonaDrop() {
+            this._zonaDrop.className  = 'zona-drop';
+            this._panelGraf.className = 'panel-grafico';
+        }
+
+        _mostrarError(msg) {
+            this._msgError.textContent  = msg;
+            this._msgError.style.display = 'block';
+        }
+
+        _ocultarError() {
+            this._msgError.style.display = 'none';
+        }
+
+        disconnectedCallback() {
+            if (this._chart) this._chart.destroy();
+        }
+    }
+
+    customElements.define('visor-csv-clima', VisorCsvClima);
+
+    function main() {
+        let visor = document.createElement('visor-csv-clima');
+        document.body.appendChild(visor);
+    }
+
+    window.onload = main;
+</script>
+
+
+</html>
