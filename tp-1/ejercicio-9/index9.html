@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Transcriptor con Web Speech API</title>
+</head>
+
+<body>    
+  
+  <h1>Transcriptor de Voz a Texto</h1>
+  <p>Haz clic en el botón y comienza a hablar. La transcripción aparecerá en tiempo real.</p>
+
+  <transcriptor-voz></transcriptor-voz>
+</body>
+  
+<script>    
+class TranscriptorVoz extends HTMLElement {
+  constructor() {
+    super();
+    var self = this;
+
+    // Crear estructura DOM
+    self.container = document.createElement('div');
+    self.btnToggle = document.createElement('button');
+    self.btnToggle.textContent = 'Comenzar a hablar para transcribir';
+    self.statusText = document.createElement('p');
+    self.transcriptBox = document.createElement('div');
+    self.transcriptBox.id = 'transcript';
+
+    // Estilos
+    var style = document.createElement('style');
+    style.textContent = 
+      ':host { display: block; font-family: system-ui, sans-serif; padding: 16px; background: #f8f9fa; border-radius: 8px; }' +
+      'button { padding: 10px 16px; cursor: pointer; border: 1px solid #0d6efd; background: #0d6efd; color: white; border-radius: 4px; font-size: 14px; }' +
+      'button:disabled { background: #6c757d; border-color: #6c757d; cursor: not-allowed; }' +
+      'p { margin: 8px 0; font-size: 13px; color: #555; }' +
+      '#transcript { margin-top: 12px; padding: 12px; background: white; border: 1px solid #ddd; border-radius: 4px; min-height: 40px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }';
+
+    self.container.appendChild(style);
+    self.container.appendChild(self.btnToggle);
+    self.container.appendChild(self.statusText);
+    self.container.appendChild(self.transcriptBox);
+
+    self.attachShadow({ mode: 'open' }).appendChild(self.container);
+
+    // Estado interno
+    self.recognition = null;
+    self.isRecording = false;
+    self.accumulatedText = '';
+  }
+
+  connectedCallback() {
+    var self = this;
+    this.btnToggle.onclick = function() {
+      self.toggleRecording();
+    };
+  }
+
+  toggleRecording() {
+    if (!this.isRecording) {
+      this.startRecording();
+    } else {
+      this.stopRecording();
+    }
+  }
+
+  startRecording() {
+    var self = this;
+
+    // Verificar soporte del navegador
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      self.statusText.textContent = 'Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.';
+      self.btnToggle.disabled = true;
+      return;
+    }
+
+    // Crear instancia de reconocimiento
+    self.recognition = new SpeechRecognition();
+    self.recognition.lang = 'es-ES';
+    self.recognition.continuous = true;
+    self.recognition.interimResults = true;
+
+    self.recognition.onstart = function() {
+      self.isRecording = true;
+      self.btnToggle.textContent = 'Detener transcripción';
+      self.statusText.textContent = 'Escuchando... Habla ahora';
+      console.log('Reconocimiento de voz iniciado');
+    };
+
+    self.recognition.onresult = function(event) {
+      var interimTranscript = '';
+      var finalTranscript = '';
+
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        var transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      if (finalTranscript) {
+        self.accumulatedText += finalTranscript;
+      }
+
+      self.transcriptBox.textContent = self.accumulatedText + interimTranscript;
+    };
+
+    self.recognition.onerror = function(event) {
+      console.error('Error de reconocimiento:', event.error);
+      var mensaje = 'Error: ';
+      
+      switch(event.error) {
+        case 'no-speech':
+          mensaje += 'No se detectó voz. Intenta de nuevo.';
+          break;
+        case 'audio-capture':
+          mensaje += 'No se encontró micrófono.';
+          break;
+        case 'not-allowed':
+          mensaje += 'Permiso de micrófono denegado.';
+          break;
+        case 'network':
+          mensaje += 'Error de red.';
+          break;
+        default:
+          mensaje += event.error;
+      }
+      
+      self.statusText.textContent = mensaje;
+      self.stopRecording();
+    };
+
+    self.recognition.onend = function() {
+      if (self.isRecording) {
+        // Reiniciar automáticamente si aún está grabando
+        try {
+          self.recognition.start();
+        } catch (e) {
+          console.log('Reiniciando reconocimiento...');
+        }
+      }
+    };
+
+    try {
+      self.recognition.start();
+    } catch (e) {
+      console.error('Error al iniciar:', e);
+      self.statusText.textContent = 'Error al iniciar el reconocimiento.';
+    }
+  }
+
+  stopRecording() {
+    var self = this;
+    self.isRecording = false;
+    
+    if (self.recognition) {
+      self.recognition.stop();
+      self.recognition = null;
+    }
+    
+    self.btnToggle.textContent = 'Comenzar a hablar para transcribir';
+    self.statusText.textContent = 'Transcripción detenida.';
+  }
+
+  disconnectedCallback() {
+    this.stopRecording();
+  }
+}
+
+customElements.define('transcriptor-voz', TranscriptorVoz);
+
+function main() {
+      // Instanciar el componente 
+  let miTranscriptor = new TranscriptorVoz();
+    }
+
+
+</script>
+</html>
