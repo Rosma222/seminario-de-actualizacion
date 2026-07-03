@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>W3Admin Dashboard</title>
+    <title>Dashboard</title>
     <link rel="stylesheet" href="https://www.w3schools.com/lib/w3.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="./assets/css/admin-styles.css">
@@ -11,24 +11,21 @@
 <body>
     <div id="app"></div>
 </body>
-   
-
-    <script>
-
+<script>
 
 // FUNCIONES DE CREACIÓN DE ELEMENTOS
 
     //Barra superior - header
     function createTopBar() {
-        let header = document.createElement('header');
-        let logoContainer = document.createElement('div');
-        let logoImg = document.createElement('img');
-        let logoText = document.createElement('span');
-        let sidebarToggleBtn = createSidebarToggleButton();
-        let rightButtons = document.createElement('div');
-        let emailBtn = createIconButton("fa-envelope-open", "Email");
-        let notificationBtn = createIconButton("fa-bell", "Notificaciones");
-        let userBtn = createIconButton("fa-user", "Usuario");
+        var header = document.createElement('header');
+        var logoContainer = document.createElement('div');
+        var logoImg = document.createElement('img');
+        var logoText = document.createElement('span');
+        var sidebarToggleBtn = createSidebarToggleButton();
+        var rightButtons = document.createElement('div');
+        var emailBtn = createIconButton("fa-envelope-open", "Email");
+        var notificationBtn = createIconButton("fa-bell", "Notificaciones");
+        var userBtn = createIconButton("fa-user", "Usuario");
 
         emailBtn.id = "topbar-email-btn";
         notificationBtn.id = "topbar-notification-btn";
@@ -71,8 +68,8 @@
 
     // Botón de icono genérico
     function createIconButton(iconClass, title) {
-        let button = document.createElement('button');
-        let icon = document.createElement('i');
+        var button = document.createElement('button');
+        var icon = document.createElement('i');
 
         button.appendChild(icon);
 
@@ -89,9 +86,9 @@
 
     // Barra lateral - sidebar
     function createSidebar() {
-        let sidebar = document.createElement('nav');
-        let navLabel = document.createElement('div');
-        let menuItems = [
+        var sidebar = document.createElement('nav');
+        var navLabel = document.createElement('div');
+        var menuItems = [
             { icon: "fa-bar-chart", text: "Dashboard", href: "./index.html", id: "menu-dashboard" },
             { icon: "fa-fire", text: "UI Icons", href: "./icons.html", id: "menu-icons" },
             { icon: "fa-edit", text: "Forms", href: "./forms.html", id: "menu-forms" },
@@ -100,16 +97,16 @@
             { icon: "fa-lock", text: "Login", href: "./login.html", id: "menu-login" },
             { icon: "fa-sign-in", text: "Registration", href: "./register.html", id: "menu-registration" }
         ];
-        let menuElements = menuItems.map(function(item) {
+        var menuElements = menuItems.map(function(item) {
             return createSidebarItem(item.icon, item.text, item.href, item.id);
         });
-        let labelsLabel = document.createElement('div');
-        let labelItems = [
+        var labelsLabel = document.createElement('div');
+        var labelItems = [
             { icon: "fa-coffee", text: "Important", color: "w3-red", id: "label-important" },
             { icon: "fa-circle-o-notch", text: "Warning", color: "w3-green", id: "label-warning" },
             { icon: "fa-share-alt", text: "Information", color: "w3-blue", id: "label-info" }
         ];
-        let labelElements = labelItems.map(function(item) {
+        var labelElements = labelItems.map(function(item) {
             return createSidebarLabel(item.icon, item.text, item.color, item.id);
         });
 
@@ -147,9 +144,9 @@
 
     // Items de la barra lateral
     function createSidebarItem(iconClass, text, href, elementId) {
-        let link = document.createElement('a');
-        let icon = document.createElement('i');
-        let span = document.createElement('span');
+        var link = document.createElement('a');
+        var icon = document.createElement('i');
+        var span = document.createElement('span');
 
         span.textContent = text;
         link.appendChild(icon);
@@ -169,8 +166,8 @@
 
     // Botón para colapsar/expandir la barra lateral
     function createSidebarToggleButton() {
-        let button = document.createElement('button');
-        let icon = document.createElement('i');
+        var button = document.createElement('button');
+        var icon = document.createElement('i');
 
         button.type = 'button';
         button.id = 'sidebar-toggle-btn';
@@ -192,9 +189,9 @@
 
     // Etiquetas de la barra lateral
     function createSidebarLabel(iconClass, text, colorClass, elementId) {
-        let container = document.createElement('div');
-        let icon = document.createElement('i');
-        let badge = document.createElement('span');
+        var container = document.createElement('div');
+        var icon = document.createElement('i');
+        var badge = document.createElement('span');
 
         container.id = elementId;
         container.appendChild(icon);
@@ -222,7 +219,7 @@
 
     // Contenido principal
     function createMainContent() {
-        let main = document.createElement('main');
+        var main = document.createElement('main');
         main.id = "main-content";
 
         main.classList.add("w3-main");
@@ -236,12 +233,12 @@
 
     // Pie de página - footer
     function createFooter() {
-        let footer = document.createElement('footer');
-        let text = document.createElement('p');
-        let span1 = document.createElement('span');
-        let heart = document.createElement('i');
-        let span2 = document.createElement('span');
-        let link = document.createElement('a');
+        var footer = document.createElement('footer');
+        var text = document.createElement('p');
+        var span1 = document.createElement('span');
+        var heart = document.createElement('i');
+        var span2 = document.createElement('span');
+        var link = document.createElement('a');
 
         span1.textContent = "Powered with ";
         span2.textContent = " by ";
@@ -285,15 +282,18 @@
             this._sidebarToggleBtn = null;
             this._menuItems = [];
 
-            // Handlers
+            // Handlers - funciones normales, no arrow
             this._onNotificationClick = this._handleNotificationClick.bind(this);
             this._onUserClick = this._handleUserClick.bind(this);
             this._onSidebarToggleClick = this._handleSidebarToggleClick.bind(this);
             this._onMenuItemClick = this._handleMenuItemClick.bind(this);
+
+            // RENDERIZAR EN EL CONSTRUCTOR
+            this._render();
         }
 
         connectedCallback(){
-            this._render();
+            // Solo manejar eventos y lógica de conexión
             this._attachEventHandlers();
         }
 
@@ -302,6 +302,11 @@
         }
 
         _render() {
+            // Verificar si ya tiene contenido para evitar duplicados
+            if (this.childElementCount > 0) {
+                return;
+            }
+
             // Crear estructura completa
             this._topBar = createTopBar();
             this._sidebar = createSidebar();
@@ -376,7 +381,7 @@
         }
 
 
-// MANEJADORES DE EVENTOS INTERNOS 
+// MANEJADORES DE EVENTOS INTERNOS - funciones normales, no arrow
         _handleNotificationClick(event){
             event.preventDefault();
             
@@ -401,9 +406,9 @@
             event.preventDefault();
             
             // Obtener información del item clickeado
-            let menuItem = event.currentTarget;
-            let menuId = menuItem ? menuItem.id : '';
-            let menuText = menuItem ? menuItem.querySelector('span').textContent : '';
+            var menuItem = event.currentTarget;
+            var menuId = menuItem ? menuItem.id : '';
+            var menuText = menuItem ? menuItem.querySelector('span').textContent : '';
             
             // Traducir click de menú a evento 
             this.dispatchEvent(new CustomEvent('menu-item-click', {
@@ -422,7 +427,7 @@
                 return;
             }
 
-            let collapsed = this._sidebar.classList.toggle('w3-hide');
+            var collapsed = this._sidebar.classList.toggle('w3-hide');
             if (collapsed) {
                 this._sidebar.style.width = '0';
                 this._mainContent.style.marginLeft = '0';
