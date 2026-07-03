@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Clima MDP WebComponent</title>
+
+    <!-- SheetJS para exportar a Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- html2canvas para exportar a PNG y PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF para exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f0f0f0; }
+        table { border-collapse: collapse; font-size: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+        th { background-color: #e0e0e0; font-weight: bold; }
+        .row-temp    { background-color: #f5d795; }
+        .row-precip  { background-color: #d0e0ff; }
+        .row-sol     { background-color: #fdff6a; }
+        .row-humedad { background-color: #63abf3; }
+        .col-annual  { font-weight: bold; background-color: #ffff99; }
+        tr.main-header th { background-color: #c3c0c0; }
+
+        .barra-botones {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-accion {
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid #555;
+            border-radius: 6px;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.15);
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .btn-accion:hover { box-shadow: 3px 3px 7px rgba(0,0,0,0.25); }
+
+        .btn-convertir { background-color: #fff3cd; color: #333; }
+        .btn-convertir:hover { background-color: #ffe08a; }
+
+        .btn-imprimir { background-color: #cce5ff; color: #004085; border-color: #004085; }
+        .btn-imprimir:hover { background-color: #99cbff; }
+
+        .btn-exportar { background-color: #d4edda; color: #155724; border-color: #155724; }
+        .btn-exportar:hover { background-color: #b8dfc4; }
+
+        .export-wrapper { position: relative; display: inline-block; }
+
+        .export-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            background-color: #fff;
+            border: 1px solid #aaa;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 999;
+            min-width: 140px;
+            overflow: hidden;
+        }
+        .export-menu.abierto { display: block; }
+
+        .export-menu button {
+            display: block;
+            width: 100%;
+            padding: 9px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #333;
+            transition: background-color 0.15s;
+        }
+        .export-menu button:hover { background-color: #f0f0f0; }
+
+        .prom-div {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid green;
+            background-color: #e0ffe0;
+        }
+
+        @media print {
+            .barra-botones { display: none !important; }
+            body { background-color: #fff; padding: 0; }
+        }
+    </style>
+
+    <h2>Datos Meteorológicos Mar del Plata (1961-1990)</h2>
+</head>
+
+<body>
+    
+</body>
+
+<tabla-clima-mardelplata id="miTablaClima"></tabla-clima-mardelplata>
+
+<script>
+    var DATOS_CLIMA = {
+        titulo: "Parámetros climáticos promedio de Mar del Plata, BA (1961-1990)",
+        encabezados: ['Mes', 'Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.', 'Jul.', 'Ago.', 'Sep.', 'Oct.', 'Nov.', 'Dic.', 'Anual'],
+        filas: [
+            { label: 'Temp. max. abs. (C)',      labelF: 'Temp. max. abs. (F)',      tipo: 'temp',    valores: [42.4, 38.1, 36.3, 32.5, 27.4, 22.2, 27.7, 24.7, 28.8, 34.4, 35.7, 39.4, 39.4] },
+            { label: 'Temp. max. media (C)',     labelF: 'Temp. max. media (F)',     tipo: 'temp',    valores: [26.3, 25.8, 23.7, 20.5, 16.8, 13.8, 13.1, 14.4, 16.0, 18.5, 21.7, 24.4, 19.6] },
+            { label: 'Temp. media (C)',           labelF: 'Temp. media (F)',           tipo: 'temp',    valores: [20.3, 19.9, 18.0, 14.8, 11.3,  8.5,  8.1,  8.9, 10.5, 13.1, 15.9, 18.5, 14.0] },
+            { label: 'Temp. min. media (C)',     labelF: 'Temp. min. media (F)',     tipo: 'temp',    valores: [14.3, 14.1, 12.5,  9.1,  6.4,  4.1,  3.8,  4.0,  5.3,  7.6, 10.1, 12.7,  8.7] },
+            { label: 'Temp. min. abs. (C)',      labelF: 'Temp. min. abs. (F)',      tipo: 'temp',    valores: [ 4.7,  1.2,  1.9, -1.0, -3.0, -5.5, -9.3, -8.4, -5.5, -3.0, -2.0, -0.2, -9.3] },
+            { label: 'Precipitacion total (mm)',                                       tipo: 'precip',  valores: [100.1, 72.8, 107.0, 73.3, 73.5, 54.9, 58.9, 64.0, 56.4, 83.4, 75.3, 104.0, 923.6] },
+            { label: 'Dias de precipitaciones (> 0.1 mm)',                            tipo: 'precip',  valores: [9, 8, 9, 9, 9, 9, 9, 8, 7, 10, 10, 10, 107] },
+            { label: 'Horas de sol',                                                   tipo: 'sol',     valores: [288.3, 234.5, 232.5, 195.0, 167.4, 120.0, 127.1, 164.3, 174.0, 210.8, 222.0, 269.7, 2405.6] },
+            { label: 'Humedad relativa (%)',                                           tipo: 'humedad', valores: [76, 77, 79, 81, 83, 84, 81, 81, 80, 80, 77, 76, 80] }
+        ]
+    };
+
+    function celsiusAFahrenheit(c) {
+        return Math.round((c * 9 / 5 + 32) * 10) / 10;
+    }
+
+    function obtenerValoresFila(filaData, unidad) {
+        if (unidad === 'F' && filaData.tipo === 'temp') {
+            var convertidos = [];
+            filaData.valores.forEach(function(v) { convertidos.push(celsiusAFahrenheit(v)); });
+            return convertidos;
+        }
+        return filaData.valores;
+    }
+
+    function obtenerLabelFila(filaData, unidad) {
+        if (unidad === 'F' && filaData.tipo === 'temp') return filaData.labelF;
+        return filaData.label;
+    }
+
+    class TablaClimaMdP extends HTMLElement {
+        constructor() {
+            super();
+            
+            // Inicialización de propiedades
+            this._unidad      = 'C';
+            this._celdasTemp  = [];
+            this._labelsTemp  = [];
+            this._boton       = null;
+            this._promDiv     = null;
+            this._tabla       = null;
+            this._menuAbierto = false;
+            this._exportMenu  = null;
+            this._btnImprimir = null;
+            this._btnExportar = null;
+            this._exportWrapper = null;
+            this._opPNG = null;
+            this._opCSV = null;
+            this._opPDF = null;
+            this._opExcel = null;
+
+            // Render completo en el constructor
+            this._render();
+        }
+
+        connectedCallback() {
+            // SOLO asociación de manejadores de eventos
+            var self = this;
+
+            // Evento del botón convertir
+            this._boton.onclick = function() { 
+                self._alternarUnidad(); 
+            };
+
+            // Evento del botón imprimir
+            this._btnImprimir.onclick = function() { 
+                window.print(); 
+            };
+
+            // Evento del botón exportar (toggle menú)
+            this._btnExportar.onclick = function() { 
+                self._toggleMenu(); 
+            };
+
+            // Eventos de las opciones del menú
+            this._opPNG.onclick = function() { 
+                self._cerrarMenu(); 
+                self._exportarPNG(); 
+            };
+
+            this._opCSV.onclick = function() { 
+                self._cerrarMenu(); 
+                self._exportarCSV(); 
+            };
+
+            this._opPDF.onclick = function() { 
+                self._cerrarMenu(); 
+                self._exportarPDF(); 
+            };
+
+            this._opExcel.onclick = function() { 
+                self._cerrarMenu(); 
+                self._exportarExcel(); 
+            };
+
+            // Cerrar menú al clickear fuera
+            document.onclick = function(e) {
+                if (self._menuAbierto && !self._exportWrapper.contains(e.target)) {
+                    self._cerrarMenu();
+                }
+            };
+        }
+
+        _render() {
+            var self = this;
+            var wrapper = document.createElement('div');
+
+            // ── Barra de botones ──
+            var barra = document.createElement('div');
+            barra.className = 'barra-botones';
+
+            // Botón convertir
+            var btnConvertir = document.createElement('button');
+            btnConvertir.className = 'btn-accion btn-convertir';
+            btnConvertir.textContent = 'Convertir a F';
+            self._boton = btnConvertir;
+            barra.appendChild(btnConvertir);
+
+            // Botón imprimir
+            var btnImprimir = document.createElement('button');
+            btnImprimir.className = 'btn-accion btn-imprimir';
+            btnImprimir.textContent = 'Imprimir';
+            self._btnImprimir = btnImprimir;
+            barra.appendChild(btnImprimir);
+
+            // Wrapper exportar
+            var exportWrapper = document.createElement('div');
+            exportWrapper.className = 'export-wrapper';
+            self._exportWrapper = exportWrapper;
+
+            var btnExportar = document.createElement('button');
+            btnExportar.className = 'btn-accion btn-exportar';
+            btnExportar.textContent = 'Exportar';
+            self._btnExportar = btnExportar;
+            exportWrapper.appendChild(btnExportar);
+
+            // Menú desplegable
+            var menu = document.createElement('div');
+            menu.className = 'export-menu';
+            self._exportMenu = menu;
+
+            var opPNG = document.createElement('button');
+            opPNG.textContent = 'PNG';
+            self._opPNG = opPNG;
+            menu.appendChild(opPNG);
+
+            var opCSV = document.createElement('button');
+            opCSV.textContent = 'CSV';
+            self._opCSV = opCSV;
+            menu.appendChild(opCSV);
+
+            var opPDF = document.createElement('button');
+            opPDF.textContent = 'PDF';
+            self._opPDF = opPDF;
+            menu.appendChild(opPDF);
+
+            var opExcel = document.createElement('button');
+            opExcel.textContent = 'Excel (XLSX)';
+            self._opExcel = opExcel;
+            menu.appendChild(opExcel);
+
+            exportWrapper.appendChild(menu);
+            barra.appendChild(exportWrapper);
+
+            wrapper.appendChild(barra);
+
+            // Título 
+            var titulo = document.createElement('h3');
+            titulo.textContent = DATOS_CLIMA.titulo;
+            titulo.style.textAlign = 'center';
+            wrapper.appendChild(titulo);
+
+            // Tabla 
+            var table = document.createElement('table');
+            self._tabla = table;
+
+            var thead = document.createElement('thead');
+            var trHead = document.createElement('tr');
+            trHead.className = 'main-header';
+            DATOS_CLIMA.encabezados.forEach(function(texto) {
+                var th = document.createElement('th');
+                th.textContent = texto;
+                if (texto === 'Anual') th.className = 'col-annual';
+                trHead.appendChild(th);
+            });
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+
+            var tbody = document.createElement('tbody');
+            self._celdasTemp = [];
+            self._labelsTemp = [];
+
+            DATOS_CLIMA.filas.forEach(function(filaData) {
+                var tr = document.createElement('tr');
+                var rowClass = '';
+                if      (filaData.tipo === 'temp')    rowClass = 'row-temp';
+                else if (filaData.tipo === 'precip')  rowClass = 'row-precip';
+                else if (filaData.tipo === 'sol')     rowClass = 'row-sol';
+                else if (filaData.tipo === 'humedad') rowClass = 'row-humedad';
+                tr.className = rowClass;
+
+                var thLabel = document.createElement('th');
+                thLabel.textContent = filaData.label;
+                thLabel.style.textAlign = 'left';
+                thLabel.style.backgroundColor = 'transparent';
+                tr.appendChild(thLabel);
+
+                var celdasFila = [];
+                filaData.valores.forEach(function(valor) {
+                    var td = document.createElement('td');
+                    td.textContent = valor;
+                    tr.appendChild(td);
+                    celdasFila.push(td);
+                });
+
+                if (filaData.tipo === 'temp') {
+                    self._celdasTemp.push(celdasFila);
+                    self._labelsTemp.push(thLabel);
+                }
+
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            wrapper.appendChild(table);
+
+            // Div del promedio
+            var resultado = self.obtenerPromediosTemperaturas();
+            var promDiv = document.createElement('div');
+            promDiv.className = 'prom-div';
+            promDiv.style.width = '675px';
+            promDiv.textContent = 'Promedio General de Temperaturas: ' + resultado.promedio_general + ' C';
+            self._promDiv = promDiv;
+            wrapper.appendChild(promDiv);
+
+            self.appendChild(wrapper);
+        }
+
+        // Alternar unidad 
+        _alternarUnidad() {
+            var self = this;
+            var indicesTemp = [0, 1, 2, 3, 4];
+
+            if (self._unidad === 'C') {
+                indicesTemp.forEach(function(idx, pos) {
+                    var filaData = DATOS_CLIMA.filas[idx];
+                    var celdas   = self._celdasTemp[pos];
+                    filaData.valores.forEach(function(valC, i) {
+                        celdas[i].textContent = celsiusAFahrenheit(valC);
+                    });
+                    self._labelsTemp[pos].textContent = filaData.labelF;
+                });
+                self._unidad = 'F';
+                self._boton.textContent = 'Convertir a C';
+                self._promDiv.textContent = 'Promedio General de Temperaturas: ' +
+                    celsiusAFahrenheit(parseFloat(self.obtenerPromediosTemperaturas().promedio_general)) + ' F';
+            } else {
+                indicesTemp.forEach(function(idx, pos) {
+                    var filaData = DATOS_CLIMA.filas[idx];
+                    var celdas   = self._celdasTemp[pos];
+                    filaData.valores.forEach(function(valC, i) {
+                        celdas[i].textContent = valC;
+                    });
+                    self._labelsTemp[pos].textContent = filaData.label;
+                });
+                self._unidad = 'C';
+                self._boton.textContent = 'Convertir a F';
+                self._promDiv.textContent = 'Promedio General de Temperaturas: ' +
+                    self.obtenerPromediosTemperaturas().promedio_general + ' C';
+            }
+        }
+
+        // Menú desplegable 
+        _toggleMenu() {
+            if (this._menuAbierto) {
+                this._cerrarMenu();
+            } else {
+                this._exportMenu.className = 'export-menu abierto';
+                this._menuAbierto = true;
+            }
+        }
+
+        _cerrarMenu() {
+            this._exportMenu.className = 'export-menu';
+            this._menuAbierto = false;
+        }
+
+        // Matriz de datos actuales
+        _obtenerMatrizDatos() {
+            var self = this;
+            var matriz = [];
+            matriz.push(DATOS_CLIMA.encabezados.slice());
+            DATOS_CLIMA.filas.forEach(function(filaData) {
+                var fila = [obtenerLabelFila(filaData, self._unidad)];
+                obtenerValoresFila(filaData, self._unidad).forEach(function(v) { fila.push(v); });
+                matriz.push(fila);
+            });
+            return matriz;
+        }
+
+        // Exportar PNG 
+        _exportarPNG() {
+            var self = this;
+            html2canvas(self._tabla, { scale: 2, backgroundColor: '#ffffff' }).then(function(canvas) {
+                var link = document.createElement('a');
+                link.download = 'clima_mdp.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        // Exportar CSV 
+        _exportarCSV() {
+            var self   = this;
+            var matriz = self._obtenerMatrizDatos();
+            var lineas = [];
+            matriz.forEach(function(fila) {
+                var celdas = fila.map(function(v) {
+                    var s = String(v);
+                    if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1) {
+                        s = '"' + s.replace(/"/g, '""') + '"';
+                    }
+                    return s;
+                });
+                lineas.push(celdas.join(','));
+            });
+            var blob = new Blob(['\uFEFF' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8;' }); 
+            var link = document.createElement('a');
+            link.download = 'clima_mdp.csv';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        }
+
+        // Exportar PDF 
+        _exportarPDF() {
+            var self = this;
+            html2canvas(self._tabla, { scale: 2, backgroundColor: '#ffffff' }).then(function(canvas) {
+                var imgData = canvas.toDataURL('image/png');
+                var pdf     = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                var pageW   = pdf.internal.pageSize.getWidth();
+                var pageH   = pdf.internal.pageSize.getHeight();
+                var margin  = 10;
+                var maxW    = pageW - margin * 2;
+                var maxH    = pageH - margin * 2;
+                var ratio   = canvas.width / canvas.height;
+                var imgW    = maxW;
+                var imgH    = imgW / ratio;
+                if (imgH > maxH) { imgH = maxH; imgW = imgH * ratio; }
+                pdf.addImage(imgData, 'PNG', margin, margin, imgW, imgH);
+                pdf.save('clima_mdp.pdf');
+            });
+        }
+
+        // Exportar Excel (XLSX) 
+        _exportarExcel() {
+            var self   = this;
+            var matriz = self._obtenerMatrizDatos();
+            var wb     = XLSX.utils.book_new();
+            var ws     = XLSX.utils.aoa_to_sheet(matriz);
+            var wscols = [{ wch: 38 }];
+            for (var i = 1; i < DATOS_CLIMA.encabezados.length; i++) { wscols.push({ wch: 8 }); }
+            ws['!cols'] = wscols;
+            XLSX.utils.book_append_sheet(wb, ws, 'Clima MdP');
+            XLSX.writeFile(wb, 'clima_mdp.xlsx');
+        }
+
+        // Método obtenerPromediosTemperaturas
+        obtenerPromediosTemperaturas() {
+            var filasTemperatura = [0, 1, 2, 3, 4];
+            var sumaTotal = 0;
+            var contador  = 0;
+            var detalle   = {};
+            filasTemperatura.forEach(function(indice) {
+                var valorAnual = DATOS_CLIMA.filas[indice].valores[12];
+                detalle[DATOS_CLIMA.filas[indice].label] = valorAnual;
+                sumaTotal += valorAnual;
+                contador++;
+            });
+            return {
+                detalle: detalle,
+                promedio_general: (sumaTotal / contador).toFixed(2)
+            };
+        }
+
+        disconnectedCallback() {}
+    }
+
+    customElements.define('tabla-clima-mardelplata', TablaClimaMdP);
+
+    function main() {
+        var componente = document.getElementById('miTablaClima');
+        var resultado  = componente.obtenerPromediosTemperaturas();
+        console.log('Resultado del metodo obtenerPromediosTemperaturas:', resultado);
+    }
+
+    window.onload = main;
+</script>
+
+</html>
