@@ -119,6 +119,28 @@ class CalculadoraModel extends EventTarget {
         return this._expression;
     }
 
+    // Agrega un caracter al final de la expresión actual
+    agregar(caracter) {
+        this.expression = this._expression + caracter;
+    }
+
+    // Evalúa la expresión matemática actual y guarda el resultado.
+    // --- CORRECCIÓN ---> La lógica del cálculo del eval del controlador debe estar en el modelo. 
+    // El controlador ejecuta un método sobre la instancia del modelo para obtener el resultado.
+    calcular() {
+        try {
+            var resultado = eval(this._expression);
+            this.expression = String(resultado);
+        } catch (error) {
+            this.expression = 'Error';
+        }
+    }
+
+    // Limpia la expresión actual
+    borrar() {
+        this.expression = '';
+    }
+
     // Despacha el evento changed hacia el exterior
     _changed() {
         this.dispatchEvent(new CustomEvent('changed'));
@@ -369,27 +391,24 @@ class CalculadoraController {
         this._view.value = this._model.expression;
     }
 
-    // La Vista notifica acción de usuario > actuar sobre el Modelo
+    // La Vista notifica acción de usuario > el Controlador delega al Modelo.
+    // El Controlador no procesa nada: solo identifica la acción y llama
+    // al método correspondiente del Modelo.
     onViewRequest(event) {
         const accion   = event.detail.accion;
         const caracter = event.detail.caracter;
 
         if (accion === 'agregar') {
             console.log('Vista solicita agregar: ' + caracter);
-            this._model.expression = this._model.expression + caracter;
+            this._model.agregar(caracter);
         }
         else if (accion === 'calcular') {
             console.log('Vista solicita calcular el resultado');
-            try {
-                var resultado = eval(this._model.expression);
-                this._model.expression = String(resultado);
-            } catch (error) {
-                this._model.expression = 'Error';
-            }
+            this._model.calcular();
         }
         else if (accion === 'borrar') {
             console.log('Vista solicita borrar');
-            this._model.expression = '';
+            this._model.borrar();
         }
     }
 }
