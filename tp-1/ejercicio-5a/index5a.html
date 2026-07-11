@@ -112,7 +112,8 @@ class FacturaAFIPForm extends HTMLElement {
   }
   
   disconnectedCallback() {
-    console.log('Componente factura-afip-form desconectado');
+     this.btnAgregarItem.onclick = null;
+     this.btnFacturar.onclick = null;
   }
   
   // Método para montar el formulario en el componente (se llama desde main)
