@@ -10,9 +10,7 @@
 
 <script>
 
-
   // FUNCIÓN EXTERNA PARA CSS - Encapsulamiento del estilo
-
   function GetEqualizerCSSStyle() {
     return `
       :host {
@@ -86,6 +84,10 @@
         ]
       };
 
+      // Array para referencias a los sliders
+      this.sliderInputs = [];
+      this.dbLabels = [];
+
       // Creación de elementos del DOM 
       // Estilos encapsulados
       var style = document.createElement('style');
@@ -113,12 +115,15 @@
       this.presetInput = document.createElement('input');
       this.presetInput.type = 'text';
       this.presetInput.className = 'preset-input';
+      this.presetInput.value = this._eqData.presetName;
+      
       //boton guardar
       this.saveBtn = document.createElement('button');
       this.saveBtn.className = 'btn';
       this.saveBtn.textContent = '💾'; 
       this.saveBtn.style.padding = '2px 6px';
       this.saveBtn.title = 'Guardar preset';
+      
       //boton eliminar
       this.deleteBtn = document.createElement('button');
       this.deleteBtn.className = 'btn';
@@ -136,6 +141,9 @@
 
       this.slidersArea = document.createElement('div');
       this.slidersArea.className = 'sliders-area';
+
+      // CREACIÓN DE SLIDERS EN EL CONSTRUCTOR
+      this._createSliders();
 
       this.buttonsArea = document.createElement('div');
       this.buttonsArea.className = 'buttons-area';
@@ -167,7 +175,41 @@
 
     connectedCallback() {
       this._attachEvents();
-      this._update(); // Llamada al método renombrado
+    }
+
+    // MÉTODO PRIVADO: Crea los sliders (llamado desde constructor)
+    _createSliders() {
+      this.sliderInputs = [];
+      this.dbLabels = [];
+
+      for (var i = 0; i < this._eqData.bands.length; i++) {
+        var band = this._eqData.bands[i];
+        var col = document.createElement('div');
+        col.className = 'slider-col';
+
+        var freqLbl = document.createElement('div');
+        freqLbl.className = 'freq-label';
+        freqLbl.textContent = band.freq;
+
+        var input = document.createElement('input');
+        input.type = 'range';
+        input.min = -12;
+        input.max = 12;
+        input.value = band.value;
+        input.dataset.index = i;
+
+        var dbLbl = document.createElement('div');
+        dbLbl.className = 'db-label';
+        dbLbl.textContent = (band.value > 0 ? '+' : '') + band.value + 'dB';
+
+        col.appendChild(freqLbl);
+        col.appendChild(input);
+        col.appendChild(dbLbl);
+        this.slidersArea.appendChild(col);
+        
+        this.sliderInputs.push(input);
+        this.dbLabels.push(dbLbl);
+      }
     }
 
     // Configuración de eventos
@@ -185,9 +227,7 @@
         var val = parseInt(e.target.value);
         
         this._eqData.bands[idx].value = val;
-        
-        var col = e.target.parentElement;
-        col.querySelector('.db-label').textContent = (val > 0 ? '+' : '') + val + 'dB';
+        this.dbLabels[idx].textContent = (val > 0 ? '+' : '') + val + 'dB';
       }
     }
 
@@ -221,42 +261,13 @@
       this._eqData.presetName = e.target.value;
     }
 
-    // Actualización visual de sliders y etiquetas
-    // antes metodo render()
+    // SOLO ACTUALIZA VALORES, NO CREA ELEMENTOS
     _update() {
-      while (this.slidersArea.firstChild) {
-        this.slidersArea.removeChild(this.slidersArea.firstChild);
-      }
-      
-      this.sliderInputs = [];
-
       for (var i = 0; i < this._eqData.bands.length; i++) {
         var band = this._eqData.bands[i];
-        var col = document.createElement('div');
-        col.className = 'slider-col';
-
-        var freqLbl = document.createElement('div');
-        freqLbl.className = 'freq-label';
-        freqLbl.textContent = band.freq;
-
-        var input = document.createElement('input');
-        input.type = 'range';
-        input.min = -12;
-        input.max = 12;
-        input.value = band.value;
-        input.dataset.index = i;
-
-        var dbLbl = document.createElement('div');
-        dbLbl.className = 'db-label';
-        dbLbl.textContent = (band.value > 0 ? '+' : '') + band.value + 'dB';
-
-        col.appendChild(freqLbl);
-        col.appendChild(input);
-        col.appendChild(dbLbl);
-        this.slidersArea.appendChild(col);
-        this.sliderInputs.push(input);
+        this.sliderInputs[i].value = band.value;
+        this.dbLabels[i].textContent = (band.value > 0 ? '+' : '') + band.value + 'dB';
       }
-
       this.presetInput.value = this._eqData.presetName;
     }
 
@@ -281,7 +292,6 @@
     }
   
 }
-
 
   customElements.define('graphic-eq', GraphicEQ);
 
