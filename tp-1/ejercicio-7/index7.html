@@ -70,38 +70,31 @@
     class TablaClimaMdP extends HTMLElement {
         constructor() {
             super();
-            this._unidad = 'C';    // Estado interno: unidad actual ('C' o 'F')
-                                    // Referencias a la tabla para actualizar 
-            this._celdasTemp = [];   // Array de arrays: por fila de temp, los TD de datos
-            this._labelsTemp = [];   // Array de TH label por fila de temp
-            this._boton = null;
-            this._promDiv = null;    //  div del promedio general
-        }
 
-        connectedCallback() {
-            this._render();
-        }
+            // --- Estado interno ---
+            this._unidad = 'C';          // Unidad actual ('C' o 'F')
+            this._celdasTemp = [];       // Array de arrays: celdas TD de cada fila de temp
+            this._labelsTemp = [];       // Array de TH label de cada fila de temp
+            this._boton = null;          // Referencia al botón de conversión
+            this._promDiv = null;        // Referencia al div de promedios
 
-        _render() {
             var self = this;
-
             var wrapper = document.createElement('div');
 
-            // --- Botón de conversión ---
+            // Botón de conversión
             var btn = document.createElement('button');
             btn.className = 'btn-convertir';
             btn.textContent = 'Convertir a °F';
-            btn.onclick = function() { self._alternarUnidad(); };
             self._boton = btn;
             wrapper.appendChild(btn);
 
-            //  Título
+            // Título
             var titulo = document.createElement('h3');
             titulo.textContent = DATOS_CLIMA.titulo;
             titulo.style.textAlign = 'center';
             wrapper.appendChild(titulo);
 
-            // Tabla 
+            // Tabla
             var table = document.createElement('table');
 
             // Encabezado
@@ -128,8 +121,9 @@
             DATOS_CLIMA.filas.forEach(function(filaData, indice) {
                 var tr = document.createElement('tr');
 
+                // Clase de fila según tipo
                 var rowClass = '';
-                if (filaData.tipo === 'temp')     rowClass = 'row-temp';
+                if (filaData.tipo === 'temp')        rowClass = 'row-temp';
                 else if (filaData.tipo === 'precip') rowClass = 'row-precip';
                 else if (filaData.tipo === 'sol')    rowClass = 'row-sol';
                 else if (filaData.tipo === 'humedad') rowClass = 'row-humedad';
@@ -175,11 +169,17 @@
             self._promDiv = promDiv;
             wrapper.appendChild(promDiv);
 
+            // Insertar todo el wrapper en el WebComponent
             self.appendChild(wrapper);
         }
 
+        connectedCallback() {
+            // Asociación del manejador del botón usando bind(this)
+            this._boton.onclick = this._alternarUnidad.bind(this);
+        }
+
         /**
-         * Alterna la unidad entre °C y °F, actualizando las celdas y labels
+         * Alterna la unidad entre °C y °F, actualizando las celdas y labels.
          */
         _alternarUnidad() {
             var self = this;
@@ -200,7 +200,6 @@
                 self._unidad = 'F';
                 self._boton.textContent = 'Convertir a °C';
                 self._promDiv.textContent = 'Promedio General de Temperaturas: ' + celsiusAFahrenheit(parseFloat(self.obtenerPromediosTemperaturas().promedio_general)) + ' °F';
-
             } else {
                 // Volver a °C
                 indicesTemp.forEach(function(idx, posicion) {
