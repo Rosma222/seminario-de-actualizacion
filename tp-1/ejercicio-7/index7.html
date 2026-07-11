@@ -242,7 +242,8 @@
         }
 
         disconnectedCallback() {
-            // Limpiar si fuera necesario
+             this._boton.onclick = null;
+             this._boundAlternarUnidad = null;
         }
     }
 
