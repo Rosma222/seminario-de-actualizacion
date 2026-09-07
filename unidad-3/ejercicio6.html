@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8" />
+<title>untitled</title>
+<meta name="generator" content="Geany 2.0" />
+</head>
+
+<body>
+</body>
+
+<script type="text/javascript">
+
+class Model extends EventTarget {
+    constructor() {
+        super();
+        this.figuras = []; //almacena array de figuras   
+    }
+   
+    changed() {
+        this.dispatchEvent(new CustomEvent('changed'));
+    }
+
+    addFigura(figura) {   //agrega figura al array de figuras
+        this.figuras.push(figura);
+        this.changed();
+    }
+
+    clear() {       //limpia el array de figuras
+        this.figuras = [];
+        this.changed();
+    }
+}
+
+class View extends HTMLElement {
+    constructor() 
+    {
+        super();
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = 800;
+        this._canvas.height = 600;
+        this._canvas.style.border = '1px solid black';
+
+        //boton para cargar imagenes 
+        this._btnCargar = document.createElement("button");
+        this._btnCargar.textContent =  "Cargar Figura";
+
+        // boton para limpiar
+        this._btnLimpiar = document.createElement("button");
+        this._btnLimpiar.textContent = "Limpiar";
+
+        this._ctx = this._canvas.getContext('2d');
+
+        this.appendChild(this._canvas);
+        this.appendChild(this._btnCargar);
+        this.appendChild(this._btnLimpiar);
+      
+    }
+    
+    set value(figuras) {
+         this._figuras = figuras;
+         this.redibujar();
+    }
+   
+    get value() {   
+        return this._figuras;  
+    }
+
+    //metodo clearRect para redibujar el canvas
+    redibujar() {this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height); 
+         for(let figura of this._figuras) {
+
+        if(figura.tipo === "circulo") {
+            this._ctx.beginPath();
+            this._ctx.arc(figura.x,figura.y,figura.radio, 0,2 * Math.PI);
+            this._ctx.stroke();
+        }
+
+        if(figura.tipo === "poligono") {
+            this._ctx.beginPath();
+            this._ctx.moveTo(figura.puntos[0].x,figura.puntos[0].y);        
+            for(let i=1;i<figura.puntos.length;i++) {
+                this._ctx.lineTo(figura.puntos[i].x,figura.puntos[i].y);    
+            }
+            this._ctx.closePath();
+            this._ctx.stroke();
+        }
+    }
+}
+
+    _onSave() {    
+        let texto = prompt( "Ingrese figura JSON"); //prompt para ingresar la figura en formato JSON
+        if (texto !== null) {
+            JSON.parse(texto); //valida el formato JSON
+            this.dispatchEvent(new CustomEvent('request', {detail: texto})); //envia el evento con la figura
+        }
+    }
+
+    _onClear() {
+        this.dispatchEvent(new CustomEvent('request', {detail: '{"tipo":"clear"}' })) //envia el evento para limpiar
+    }
+
+    connectedCallback() {
+       console.log('Canvas agregado...')
+       this._btnCargar.onclick = this._onSave.bind(this);
+       this._btnLimpiar.onclick =   this._onClear.bind(this);
+    }
+
+    disconnectedCallback() {    
+        this._btnCargar.onclick = null;
+        this._btnLimpiar.onclick = null;
+    }
+}
+
+customElements.define('x-view', View);
+
+
+class Controller {
+    constructor(view, model) {
+        this._view = view;
+        this._model = model;
+        this._onModelChanged = this.onModelChanged.bind(this);
+        this._onViewRequest = this.onViewRequest.bind(this);
+    }
+    enable() {
+        this._model.addEventListener('changed', this._onModelChanged);
+        this._view.addEventListener('request', this._onViewRequest);
+    }
+    disable() {
+        this._model.removeEventListener('changed', this._onModelChanged);
+        this._view.removeEventListener('request', this._onViewRequest);
+    }
+    onModelChanged() {
+        this._view.value = this._model.figuras; //cuan el modelo cambia, actualiza la vista
+        
+    }
+    onViewRequest(event) {
+       let figura = JSON.parse(event.detail);
+       if (figura.tipo === "clear") {
+           this._model.clear();
+       } else {
+           this._model.addFigura(figura); //recibe el evento añadir
+       }
+    }
+}
+
+function main() {
+    let myModel = new Model();
+    let myView = new View();
+    let myController = new Controller(myView, myModel);
+    myController.enable();
+    document.body.appendChild(myView);
+}
+window.onload = main;
+
+</script>
+
+</html>
