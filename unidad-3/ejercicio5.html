@@ -34,45 +34,23 @@ class View extends HTMLElement {
         this._canvas.style.border = '1px solid black';
 
         let ctx = this._canvas.getContext('2d');
+        let puntajes = [1000, 750, 500, 100, 50]; //array de puntajes
+        let radioMaximo = this._canvas.width / 2; //radio máx del canvas
+        let incrementoRadio = radioMaximo / puntajes.length; //incremento de radio para c/pje
+        let centro = this._canvas.width / 2; //centro del canvas
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-        ctx.beginPath();
-        ctx.arc(250, 250, 250, 0, 2 * Math.PI); 
-        ctx.fillText("1000", 250, 250);
-        ctx.closePath(); 
-        ctx.stroke(); 
+        for (let i = 0; i < puntajes.length; i++) { //bucle p/dibujar círculos y puntajes
+            let radio = (i + 1) * incrementoRadio;  
+            let posicionTexto = i === 0 ? centro : centro - (radio - incrementoRadio / 2); //posición del texto=centro del círculo
 
-        
-
-        ctx.beginPath();
-        ctx.arc(250, 250, 200, 0, 2 * Math.PI); 
-        ctx.fillText("750", 250, 200);
-        ctx.closePath(); 
-        ctx.stroke();
-
-        
-        ctx.beginPath();
-        ctx.arc(250, 250, 150, 0, 2 * Math.PI); 
-        ctx.fillText("500", 250, 150);
-        ctx.closePath(); 
-        ctx.stroke();
-
-        
-
-        ctx.beginPath();
-        ctx.arc(250, 250, 100, 0, 2 * Math.PI); 
-        ctx.fillText("100", 250, 100);
-        ctx.closePath(); 
-        ctx.stroke();
-
-       
-
-        ctx.beginPath();
-        ctx.arc(250, 250, 50, 0, 2 * Math.PI); 
-        ctx.fillText("50", 250, 50);
-        ctx.closePath(); 
-        ctx.stroke();
-
-       
+            ctx.beginPath();
+            ctx.arc(centro, centro, radio, 0, 2 * Math.PI);
+            ctx.fillText(puntajes[i], centro, posicionTexto);
+            ctx.closePath();
+            ctx.stroke();
+        }
 
 
         this.appendChild(this._canvas);
