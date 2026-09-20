@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8" />
+<title>Ejercicios integradores</title>
+<meta charset="utf-8" />
+<script src="MVCCanvas.js"></script>
+<script src="ejercicio6.js"></script>
+</head>
+
+<body>
+
+</body>
+
+<script>
+
+
+function main(){
+	let myModel = new Model();
+    let myView = new View();
+    let myController = new Controller(myView, myModel);
+
+	let btnEj6 = document.createElement('button');
+	let btnClear = document.createElement('button');
+	
+
+	btnEj6.innerText = 'Ejercicio 6';
+	btnClear.innerText = 'Limpiar';
+
+	btnEj6.onclick = () => {
+		myView.cargarFigura();
+    }
+
+
+	btnClear.onclick = () => {
+		myView.solicitarLimpieza();
+	}
+
+	myController.enable();
+	document.body.appendChild(btnEj6);
+	document.body.appendChild(btnClear);
+	document.body.appendChild(myView);
+}
+
+window.onload = main;
+
+</script>
+
+</html>
