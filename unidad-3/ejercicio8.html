@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Grafico de torta con etiquetas</title>
+</head>
+
+<body>
+</body>
+
+<script type="text/javascript">
+
+class Model extends EventTarget {
+    constructor(datosIniciales) {
+        super();
+        this._datos = datosIniciales;
+    }
+
+    get datos() {
+        return this._datos;
+    }
+
+    set datos(nuevosDatos) {
+        this._datos = nuevosDatos;
+        this.changed(); 
+    }
+
+    changed() {
+        this.dispatchEvent(new CustomEvent('changed'));
+    }
+}
+
+
+class View extends HTMLElement {
+    constructor() {
+        super();
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = 500;
+        this._canvas.height = 500;
+        this._canvas.style.border = '1px solid black';
+        this.appendChild(this._canvas); 
+        
+        // Inicializamos los datos
+        this._datosActuales = null; 
+    }
+
+    set value(datos) {
+        this._dibujarGrafico(datos);
+    }
+
+    get value() {
+        return this._datosActuales;
+    }
+
+    _dibujarGrafico(datos) {
+        this._datosActuales = datos;
+        const ctx = this._canvas.getContext('2d');
+        const ancho = this._canvas.width;
+        const alto = this._canvas.height;
+        
+        const centroX = ancho / 2;
+        const centroY = alto / 2;
+        const radio = Math.min(centroX, centroY);
+        
+        ctx.textAlign = 'center';
+       
+        let anguloInicio = 0;
+
+        for (let i = 0; i < datos.length; i++) {
+            const item = datos[i]; //item = objeto  de datos
+            
+            // item.valor para los cálculos 
+            const anguloPorcion = item.valor * 2 * Math.PI;
+            const anguloFin = anguloInicio + anguloPorcion;
+
+            // dibuja porcion
+            ctx.beginPath();
+            ctx.moveTo(centroX, centroY);
+            ctx.arc(centroX, centroY, radio, anguloInicio, anguloFin);
+            ctx.closePath();
+            ctx.stroke();
+           
+            // texto al centro
+            const anguloMedio = anguloInicio + (anguloPorcion / 2);
+            const textoX = centroX + (radio / 2) * Math.cos(anguloMedio);
+            const textoY = centroY + (radio / 2) * Math.sin(anguloMedio);
+            
+            // string de etiqueta y %
+            const porcentaje = Math.round(item.valor * 100) + '%';
+            const textoParaMostrar = `${item.etiqueta} (${porcentaje})`;
+            
+            // Dibuja el texto 
+            ctx.fillText(textoParaMostrar, textoX, textoY);
+
+            anguloInicio = anguloFin;
+        }       
+    }
+
+    connectedCallback() {
+        console.log('Canvas agregado...');
+    }
+
+    disconnectedCallback() {
+    }
+
+    _onSave() {
+    }
+}
+
+customElements.define('x-view', View);
+
+
+class Controller {
+    constructor(view, model) {
+        this._view = view;
+        this._model = model;
+        
+        this._onModelChanged = this.onModelChanged.bind(this);
+        this._onViewRequest = this.onViewRequest.bind(this);
+    }
+
+    enable() {
+        this._model.addEventListener('changed', this._onModelChanged);
+        this._view.addEventListener('request', this._onViewRequest);
+        
+        this.onModelChanged();
+    }
+
+    disable() {
+        this._model.removeEventListener('changed', this._onModelChanged);
+        this._view.removeEventListener('request', this._onViewRequest);
+    }
+
+    onModelChanged() {
+        this._view.value = this._model.datos;
+    }
+
+    onViewRequest(event) {
+    }
+}
+
+
+function main() {
+    // pasamos el array de objetos 
+    const datosIniciales = [
+        { valor: 0.30, etiqueta: "HTML" },
+        { valor: 0.50, etiqueta: "JAVA" },
+        { valor: 0.10, etiqueta: "JSON" },
+        { valor: 0.10, etiqueta: "Otros" }
+    ];
+    
+    let myModel = new Model(datosIniciales);
+    let myView = new View();
+    let myController = new Controller(myView, myModel);
+    
+    myController.enable();
+    
+    document.body.appendChild(myView);
+}
+
+window.onload = main;
+
+</script>
+
+</html>
