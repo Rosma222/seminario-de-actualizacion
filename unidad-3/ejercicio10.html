@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="utf-8" />
+<title>lineas quebradas</title>
+</head>
+
+<body>
+</body>
+
+<script type="text/javascript">
+
+class Model extends EventTarget {
+    constructor() {
+        super();
+    }
+   
+    changed() {
+        this.dispatchEvent(new CustomEvent('changed'));
+    }
+}
+
+class View extends HTMLElement {
+    constructor() {
+        super();
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = 500;
+        this._canvas.height = 500;
+        this._canvas.style.border = '1px solid black';
+
+        let ctx = this._canvas.getContext('2d');
+
+        ctx.lineWidth = 25;
+        
+        // Línea 1: Extremos butt (plano) y union bevel (bisel) 
+        ctx.beginPath();
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'bevel';
+        ctx.moveTo(50, 100);  // Punto 1
+        ctx.lineTo(150, 250);  // Punto 2 (esquina)
+        ctx.lineTo(50, 400);  // Punto 3
+        ctx.stroke();
+        ctx.closePath();
+        
+        // Línea 2: Extremos round y union round (redondeado)
+        ctx.beginPath();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.moveTo(200, 100);  // Punto 1
+        ctx.lineTo(300, 250);  // Punto 2 (esquina)
+        ctx.lineTo(200, 400);  // Punto 3
+        ctx.stroke();
+        ctx.closePath();
+
+        // Línea 3: Extremos square (cuadrado) y union miter (punta)
+        ctx.beginPath();
+        ctx.lineCap = 'square';
+        ctx.lineJoin = 'miter';
+        ctx.moveTo(350, 100);  // Punto 1
+        ctx.lineTo(450, 250);  // Punto 2 (esquina)
+        ctx.lineTo(350, 400);  // Punto 3
+        ctx.stroke();
+        ctx.closePath();
+
+        this.appendChild(this._canvas);
+    }
+    
+    set value(x) {   
+    }
+   
+    get value() {     
+    }
+    
+    connectedCallback() {
+       console.log('Canvas agregado...');
+    }
+    
+    disconnectedCallback() {    
+    }
+    
+    _onSave() {  
+    }
+}
+customElements.define('x-view', View);
+
+
+class Controller {
+    constructor(view, model) {
+        this._view = view;
+        this._model = model;
+        this._onModelChanged = this.onModelChanged.bind(this);
+        this._onViewRequest = this.onViewRequest.bind(this);
+    }
+    
+    enable() {
+        this._model.addEventListener('changed', this._onModelChanged);
+        this._view.addEventListener('request', this._onViewRequest);
+    }
+    
+    disable() {
+        this._model.removeEventListener('changed', this._onModelChanged);
+        this._view.removeEventListener('request', this._onViewRequest);
+    }
+    
+    onModelChanged() {     
+    }
+    
+    onViewRequest(event) {
+    }
+}
+
+function main() {
+    let myModel = new Model();
+    let myView = new View();
+    let myController = new Controller(myView, myModel);
+    myController.enable();
+    document.body.appendChild(myView);
+}
+
+window.onload = main;
+
+</script>
+
+</html>
