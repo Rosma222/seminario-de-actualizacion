@@ -7,14 +7,13 @@
 <meta charset="utf-8" />
 <script src="MVCCanvas.js"></script>
 <script src="ejercicio6.js"></script>
+<script src="ejercicio12.js"></script>
 </head>
 
 <body>
-
 </body>
 
 <script>
-
 
 function main(){
 	let myModel = new Model();
@@ -22,23 +21,31 @@ function main(){
     let myController = new Controller(myView, myModel);
 
 	let btnEj6 = document.createElement('button');
+	let btnEj12 = document.createElement('button');
+
 	let btnClear = document.createElement('button');
 	
 
 	btnEj6.innerText = 'Ejercicio 6';
+	btnEj12.innerText = 'Ejercicio 12';
 	btnClear.innerText = 'Limpiar';
 
 	btnEj6.onclick = () => {
-		myView.cargarFigura();
+		myView.cargarFigura6();
     }
 
+	btnEj12.onclick = () => {
+		myView.cargarFigura12();
+	}
 
 	btnClear.onclick = () => {
 		myView.solicitarLimpieza();
 	}
 
 	myController.enable();
+
 	document.body.appendChild(btnEj6);
+	document.body.appendChild(btnEj12);
 	document.body.appendChild(btnClear);
 	document.body.appendChild(myView);
 }
