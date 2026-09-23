@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="utf-8" />
+<title>Grilla diagonal</title>
+</head>
+
+<body>
+
+</body>
+
+<script type="text/javascript">
+
+class Model extends EventTarget {
+    constructor() {
+        super();
+    }
+   
+    changed() {
+        this.dispatchEvent(new CustomEvent('changed'));
+    }
+}
+
+class View extends HTMLElement {
+    constructor() {
+        super();
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = 500;
+        this._canvas.height = 500;
+        this._canvas.style.border = '1px solid black';
+
+        let ctx = this._canvas.getContext('2d');
+
+        ctx.lineWidth = 2; 
+
+        let lineIndex = 0; // Contador para alternar líneas continuas y punteadas
+        const espaciado = 15; // Separación 15px
+        const inclinacion = 0.5; //para que queden diagonales
+        
+        // LINEAS DE IZQUIERDA A DERECHA
+        for (let y = -this._canvas.height; y <= this._canvas.height; y += espaciado) { 
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(this._canvas.width, y + this._canvas.width * inclinacion); //de x,y (0,0) 
+
+            //alterna continua y punteada
+            if (lineIndex % 2 === 0) {  
+                ctx.setLineDash([]); // Array vacío = línea continua
+            } else {
+                ctx.setLineDash([8, 8]); // 8px pintado, 8px de espacio p/la punteada
+            }
+
+            ctx.stroke();
+            ctx.closePath();
+            
+            lineIndex++; // Incrementa el contador p/siguiente línea
+        }
+
+        lineIndex = 0;
+
+        // LINEAS DE DERECHA A IZQUIERDA
+        for (let y = -this._canvas.height; y <= this._canvas.height; y += espaciado) {
+            ctx.beginPath();
+            ctx.moveTo(this._canvas.width, y);
+            ctx.lineTo(0, y + this._canvas.width * inclinacion);//de x,y (500,0) 
+
+            if (lineIndex % 2 === 0) {
+                ctx.setLineDash([]);
+            } else {
+                ctx.setLineDash([8, 8]);
+            }
+
+            ctx.stroke();
+            ctx.closePath();
+            lineIndex++;
+        }
+
+        this.appendChild(this._canvas);
+    }
+    
+    set value(x) {
+       
+    }
+   
+    get value() {
+        
+    }
+    
+    connectedCallback() {
+       console.log('Canvas agregado...');
+    }
+    
+    disconnectedCallback() {
+        
+    }
+    
+    _onSave() {
+       
+    }
+}
+customElements.define('x-view', View);
+
+
+class Controller {
+    constructor(view, model) {
+        this._view = view;
+        this._model = model;
+        this._onModelChanged = this.onModelChanged.bind(this);
+        this._onViewRequest = this.onViewRequest.bind(this);
+    }
+    
+    enable() {
+        this._model.addEventListener('changed', this._onModelChanged);
+        this._view.addEventListener('request', this._onViewRequest);
+    }
+    
+    disable() {
+        this._model.removeEventListener('changed', this._onModelChanged);
+        this._view.removeEventListener('request', this._onViewRequest);
+    }
+    
+    onModelChanged() {
+        
+    }
+    
+    onViewRequest(event) {
+       
+    }
+}
+
+function main() {
+    let myModel = new Model();
+    let myView = new View();
+    let myController = new Controller(myView, myModel);
+    myController.enable();
+    document.body.appendChild(myView);
+}
+
+window.onload = main;
+
+</script>
+
+</html>
