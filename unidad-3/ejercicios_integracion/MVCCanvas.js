@@ -95,6 +95,48 @@ class View extends HTMLElement {
         }
     }
     
+      cargarFigura19(tipo) {
+        let mensaje = "Ingrese JSON";
+        let ejemploJSON = "{}";
+
+        // prompt con ejemplo según selección del usuario p/evitar errores
+        if (tipo === 'cakegraph') {
+            mensaje = "Ingrese JSON (para cakegraph solo datos)";
+            ejemploJSON = '{"datos": [10, 20, 30, 40]}';
+        } else if (tipo === 'circulo') {
+            mensaje = "Ingrese JSON para Círculo";
+            ejemploJSON = '{"x": 400, "y": 300, "radio": 100}';
+        } else if (tipo === 'poligono') {
+            mensaje = "Ingrese JSON para Polígono";
+            ejemploJSON = '{"puntos": [{"x": 100, "y": 100}, {"x": 200, "y": 100}, {"x": 150, "y": 200}]}';
+        }
+
+        let texto = prompt(mensaje, ejemploJSON);
+        if (texto === null) return; // Usuario canceló
+
+        try {
+            let data = JSON.parse(texto);
+            let figura;
+
+            if (tipo === 'cakegraph') {
+                figura = new CakeGraph(data);
+            } else {
+                figura = data;
+                figura.tipo = tipo;
+            }
+
+            // Aplicar estilos globales
+            figura.lineWidth = parseInt(this._lineWidthInput.value);
+            figura.lineType = this._lineTypeSelect.value;
+
+            this.dispatchEvent(new CustomEvent('request', { detail: figura }));
+            
+        } catch (error) {
+            alert("El JSON ingresado no es válido.");
+        }
+    }
+    
+
     solicitarLimpieza() {
         this.dispatchEvent(new CustomEvent('clear'));
     }
@@ -102,7 +144,11 @@ class View extends HTMLElement {
     render(figuras) {
         this.clear();
         for (const fig of figuras) {
-            ejercicio12(this._canvas, fig);
+            if (fig.tipo === 'cakegraph') {
+                ejercicio19(this._canvas, fig);
+            } else {
+                ejercicio12(this._canvas, fig);
+            }
         } 
     }
     
