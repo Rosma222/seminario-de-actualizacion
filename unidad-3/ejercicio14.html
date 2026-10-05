@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="utf-8" />
+<title>Rectangulo-Gradiente Lineal</title>
+</head>
+
+<body>
+
+<script type="text/javascript">
+
+class Model extends EventTarget {
+    constructor() {
+        super();
+        // Colores iniciales en notación HEX
+        this._color1 = "#ffde21";
+        this._color2 = "#0000ff"; 
+    }
+   
+    get colors() {
+        return { color1: this._color1, color2: this._color2 };
+    }
+
+    set colors(val) {
+        let changed = false;
+        if (this._color1 !== val.color1) {
+            this._color1 = val.color1;
+            changed = true;
+        }
+        if (this._color2 !== val.color2) {
+            this._color2 = val.color2;
+            changed = true;
+        }
+        // Solo notifica si realmente hubo un cambio
+        if (changed) {
+            this.changed();
+        }
+    }
+
+    changed() {
+        this.dispatchEvent(new CustomEvent('changed'));
+    }
+}
+
+class View extends HTMLElement {
+    constructor() {
+        super();
+        
+        // inputs de color fuera del canvas
+        this._label1 = document.createElement('label');
+        this._label1.textContent = 'Color 1: ';
+        
+        this._inputColor1 = document.createElement('input');
+        this._inputColor1.type = 'color';
+        this._inputColor1.value = '#ffde21' 
+        
+        this._label2 = document.createElement('label');
+        this._label2.textContent = 'Color 2: ';
+        
+        this._inputColor2 = document.createElement('input');
+        this._inputColor2.type = 'color';
+        this._inputColor2.value = '#0000ff'; // Valor inicial HEX
+
+        // Crear el canvas
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = 800;
+        this._canvas.height = 600;
+        this._canvas.style.border = '1px solid black';
+        this._canvas.style.display = 'block';
+        this._canvas.style.marginTop = '10px';
+
+        // Agregar elementos al DOM 
+        this.appendChild(this._label1);
+        this.appendChild(this._inputColor1);
+        this.appendChild(this._label2);
+        this.appendChild(this._inputColor2);
+        this.appendChild(this._canvas);
+
+  
+        this._ctx = this._canvas.getContext('2d');
+
+        // Enlazar eventos de los inputs 
+        this._handleInput = this._handleInput.bind(this);
+        this._inputColor1.addEventListener('input', this._handleInput);
+        this._inputColor2.addEventListener('input', this._handleInput);
+    }
+    
+    _handleInput() {
+        // Notificar al controller que el usuario solicitó un cambio
+        this.dispatchEvent(new CustomEvent('request', { 
+            detail: { 
+                color1: this._inputColor1.value, 
+                color2: this._inputColor2.value 
+            } 
+        }));
+    }
+    
+    set value(colors) {
+        if (colors) {
+            if (colors.color1) this._inputColor1.value = colors.color1;
+            if (colors.color2) this._inputColor2.value = colors.color2;
+        }
+        this._draw();
+    }
+   
+    get value() {
+        return {
+            color1: this._inputColor1.value,
+            color2: this._inputColor2.value
+        };
+    }
+
+    _draw() {
+        // Limpiar el canvas antes de redibujar
+        this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+        
+        const c1 = this._inputColor1.value;
+        const c2 = this._inputColor2.value;
+        
+        // posición y tamaño del rectángulo (200x400)
+        const x = 300;
+        const y = 100;
+        const width = 200;
+        const height = 400;
+        
+        // gradiente lineal horizontal:
+        // Para que sea horizontal, Y debe ser la misma en el inicio y el fin (y, y)
+        // X va desde el inicio (x) hasta el final del rectángulo (x + width)
+        const gradient = this._ctx.createLinearGradient(x, y, x + width, y);
+        gradient.addColorStop(0, c1);
+        gradient.addColorStop(1, c2);
+        
+        // Dibujar el rectángulo relleno con el gradiente
+        this._ctx.fillStyle = gradient;
+        this._ctx.fillRect(x, y, width, height);
+    }
+    
+    connectedCallback() {
+       console.log('Canvas agregado al DOM...');
+       this._draw();
+    }
+    
+    disconnectedCallback() {
+        this._inputColor1.removeEventListener('input', this._handleInput);
+        this._inputColor2.removeEventListener('input', this._handleInput);
+    }
+}
+customElements.define('x-view', View);
+
+
+class Controller {
+    constructor(view, model) {
+        this._view = view;
+        this._model = model;
+        this._onModelChanged = this.onModelChanged.bind(this);
+        this._onViewRequest = this.onViewRequest.bind(this);
+    }
+    
+    enable() {
+        this._model.addEventListener('changed', this._onModelChanged);
+        this._view.addEventListener('request', this._onViewRequest);
+        // Inicializar la vista con el estado inicial del modelo
+        this._view.value = this._model.colors;
+    }
+    
+    disable() {
+        this._model.removeEventListener('changed', this._onModelChanged);
+        this._view.removeEventListener('request', this._onViewRequest);
+    }
+    
+    onModelChanged() {
+        // El modelo cambió, actualizamos la vista
+        this._view.value = this._model.colors;
+    }
+    
+    onViewRequest(event) {
+        // La vista solicitó un cambio, actualizamos el modelo
+        this._model.colors = event.detail;
+    }
+}
+
+function main() {
+    let myModel = new Model();
+    let myView = new View();
+    let myController = new Controller(myView, myModel);
+    
+    myController.enable();
+    document.body.appendChild(myView);
+}
+
+window.onload = main;
+
+</script>
+
+</body>
+</html>
