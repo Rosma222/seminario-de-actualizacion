@@ -8,6 +8,7 @@
 <script src="MVCCanvas.js"></script>
 <script src="ejercicio6.js"></script>
 <script src="ejercicio12.js"></script>
+<script src="ejercicio19.js"></script>
 </head>
 
 <body>
@@ -22,12 +23,23 @@ function main(){
 
 	let btnEj6 = document.createElement('button');
 	let btnEj12 = document.createElement('button');
+	let btnEj19 = document.createElement('button');
 
 	let btnClear = document.createElement('button');
 	
+	// Botón selector desplegable
+    let selectFigura = document.createElement('select');
+    selectFigura.innerHTML = `
+        <option value="circulo">Círculo</option>
+        <option value="poligono">Polígono</option>
+        <option value="cakegraph">CakeGraph</option>
+    `;
+    selectFigura.style.marginRight = '10px';
+
 
 	btnEj6.innerText = 'Ejercicio 6';
 	btnEj12.innerText = 'Ejercicio 12';
+	btnEj19.innerText = 'Ejercicio 19';
 	btnClear.innerText = 'Limpiar';
 
 	btnEj6.onclick = () => {
@@ -38,6 +50,10 @@ function main(){
 		myView.cargarFigura12();
 	}
 
+	btnEj19.onclick = () => {
+		myView.cargarFigura19(selectFigura.value);
+	}
+
 	btnClear.onclick = () => {
 		myView.solicitarLimpieza();
 	}
@@ -46,6 +62,8 @@ function main(){
 
 	document.body.appendChild(btnEj6);
 	document.body.appendChild(btnEj12);
+	document.body.appendChild(btnEj19);
+	document.body.appendChild(selectFigura);
 	document.body.appendChild(btnClear);
 	document.body.appendChild(myView);
 }
