@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Circulo-Gradiente Radial</title>
+</head>
+
+<body>
+</body>
+
+<script type="text/javascript">
+
+    class Model extends EventTarget {
+        constructor() {
+            super();
+            // Definir el círculo
+            this._centroX = 400;
+            this._centroY = 300;
+            this._radio = 150;
+            
+            // Colores HEX
+            this._colorCentro = "#f1c40f"; 
+            this._colorBorde = "#e67e22";  
+        }
+
+        // Getter para exponer los datos a la vista/controlador
+        get datos() {
+            return {
+                centroX: this._centroX,
+                centroY: this._centroY,
+                radio: this._radio,
+                colorCentro: this._colorCentro,
+                colorBorde: this._colorBorde
+            };
+        }
+   
+        changed() {
+            this.dispatchEvent(new CustomEvent('changed'));
+        }
+    }
+
+    class View extends HTMLElement {
+        constructor() {
+            super();
+            this._canvas = document.createElement('canvas');
+            this._canvas.width = 800;
+            this._canvas.height = 600;
+            this._canvas.style.border = '1px solid black';
+
+            this._ctx = this._canvas.getContext('2d');
+            this.appendChild(this._canvas);
+        }
+        
+        // Al asignar el valor, se dispara el renderizado
+        set value(datos) {            
+            // gradiente radial usando función
+            let estiloRelleno = this._generarGradienteRadial(
+                this._ctx, 
+                datos.centroX, 
+                datos.centroY, 
+                datos.radio, 
+                datos.colorCentro, 
+                datos.colorBorde
+            );
+            
+            //Dibujar círculo aplicando gradiente
+            this._dibujarCirculo(this._ctx, datos.centroX, datos.centroY, datos.radio, estiloRelleno);
+        }
+       
+        get value() {
+            return this._canvas;
+        }
+
+        connectedCallback() {
+        }
+
+        disconnectedCallback() {
+        }
+        
+       
+        // Función p/dibujar el círculo
+        _dibujarCirculo(ctx, cx, cy, radio, estiloRelleno) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radio, 0, Math.PI * 2); 
+            ctx.closePath();
+            
+            ctx.fillStyle = estiloRelleno;
+            ctx.fill();
+            
+            // Borde 
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        
+        // funcion Gradiente radial (el centro y el borde ext. tienen el mismo punto focal)
+        //createRadialGradient(x0, y0, r0, x1, y1, r1)
+        // (x0,y0) y (x1,y1)deben ser idénticos
+        _generarGradienteRadial(ctx, cx, cy, radio, colorCentroHex, colorBordeHex) {
+            //círculo interior radio 0 (punto) y exterior = al radio del círculo.
+            let gradiente = ctx.createRadialGradient(
+                cx, cy, 0,        // Círculo interior: mismo centro, radio 0
+                cx, cy, radio     // Círculo exterior: mismo centro, radio del círculo
+            );
+            
+            gradiente.addColorStop(0, colorCentroHex); //centro
+            gradiente.addColorStop(1, colorBordeHex);  // borde
+
+            return gradiente;
+        }
+        
+        _onSave() {
+        }
+    }
+    
+    customElements.define('x-view', View);
+
+    class Controller {
+        constructor(view, model) {
+            this._view = view;
+            this._model = model;
+            this._onModelChanged = this.onModelChanged.bind(this);
+            this._onViewRequest = this.onViewRequest.bind(this);
+        }
+        
+        enable() {
+            this._model.addEventListener('changed', this._onModelChanged);
+            this._view.addEventListener('request', this._onViewRequest);
+            
+            this.onModelChanged();
+        }
+        
+        disable() {
+            this._model.removeEventListener('changed', this._onModelChanged);
+            this._view.removeEventListener('request', this._onViewRequest);
+        }
+        
+        onModelChanged() {
+            // Pasar los datos del modelo a la vista para que se dibuje
+            this._view.value = this._model.datos;
+        }
+        
+        onViewRequest(event) {
+            console.log('Solicitud recibida de la vista:', event.detail);
+        }
+    }
+
+    function main() {
+        let myModel = new Model();
+        let myView = new View();
+        let myController = new Controller(myView, myModel);
+        
+        myController.enable();
+        document.body.appendChild(myView);
+    }
+    
+    window.onload = main;
+
+</script>
+
+</html>
