@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Poligono-Gradiente 45°</title>
+</head>
+
+<body>
+</body>
+
+<script type="text/javascript">
+
+    class Model extends EventTarget {
+        constructor() {
+            super();
+            // un cuadrado de 200x200 en 300,200
+            this._poligono = [
+                { x: 300, y: 200 },
+                { x: 500, y: 200 },
+                { x: 500, y: 400 },
+                { x: 300, y: 400 }
+            ];
+            
+            // Colores HEX
+            this._colorInicio = "#ff1493"; 
+            this._colorFin = "#191970";   
+        }
+
+        // Getter para exponer los datos a la vista/controlador
+        get datos() {
+            return {
+                poligono: this._poligono,
+                colorInicio: this._colorInicio,
+                colorFin: this._colorFin
+            };
+        }
+   
+        changed() {
+            this.dispatchEvent(new CustomEvent('changed'));
+        }
+    }
+
+    class View extends HTMLElement {
+        constructor() {
+            super();
+            this._canvas = document.createElement('canvas');
+            this._canvas.width = 800;
+            this._canvas.height = 600;
+            this._canvas.style.border = '1px solid black';
+
+            this._ctx = this._canvas.getContext('2d');
+            this.appendChild(this._canvas);
+        }
+        
+        // Al asignar el valor, se dispara el renderizado
+        set value(datos) {
+            // Obtener el gradiente desde la función
+            let estiloRelleno = this._generarGradiente45(
+                this._ctx, 
+                datos.poligono, 
+                datos.colorInicio, 
+                datos.colorFin
+            );
+            
+            // Dibuja el polígono 
+            this._dibujarPoligono(this._ctx, datos.poligono, estiloRelleno);
+        }
+       
+        get value() {
+            return this._canvas;
+        }
+
+        connectedCallback() {
+        }
+
+        disconnectedCallback() {
+        }
+        
+        
+        // Función constructora de polígonos (del ej 3)
+        _dibujarPoligono(ctx, puntos, estiloRelleno) {
+            if (!puntos || puntos.length < 3) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(puntos[0].x, puntos[0].y); 
+            
+            for (let i = 1; i < puntos.length; i++) {
+                ctx.lineTo(puntos[i].x, puntos[i].y);
+            }
+            
+            ctx.closePath(); // Cierra el trazo
+            
+            ctx.fillStyle = estiloRelleno;
+            ctx.fill();
+            
+            // Borde 
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+       
+        // función Gradiente a 45° entre dos colores HEX
+        _generarGradiente45(ctx, puntos, colorInicioHex, colorFinHex) {
+            //Calcular la caja delimitadora del polígono
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+
+            for (let i = 0; i < puntos.length; i++) {
+                if (puntos[i].x < minX) minX = puntos[i].x;
+                if (puntos[i].y < minY) minY = puntos[i].y;
+                if (puntos[i].x > maxX) maxX = puntos[i].x;
+                if (puntos[i].y > maxY) maxY = puntos[i].y;
+            }
+
+            // Calcular el centro y el tamaño máximo
+            let centroX = (minX + maxX) / 2;
+            let centroY = (minY + maxY) / 2;
+            let tamano = Math.max(maxX - minX, maxY - minY);
+
+            // Definir coordenadas de inicio y fin para garantizar 45°
+            // (ángulo de 45° => el desplazamiento en X es = al de Y)
+            let x0 = centroX - (tamano / 2);
+            let y0 = centroY - (tamano / 2);
+            let x1 = centroX + (tamano / 2);
+            let y1 = centroY + (tamano / 2);
+
+            // Crear y configurar el gradiente
+            let gradiente = ctx.createLinearGradient(x0, y0, x1, y1);
+            gradiente.addColorStop(0, colorInicioHex); // inicio recorrido
+            gradiente.addColorStop(1, colorFinHex);    // 100% del recorrido
+
+            return gradiente;
+        }
+        
+        _onSave() {
+        }
+    }
+    
+    customElements.define('x-view', View);
+
+    class Controller {
+        constructor(view, model) {
+            this._view = view;
+            this._model = model;
+            this._onModelChanged = this.onModelChanged.bind(this);
+            this._onViewRequest = this.onViewRequest.bind(this);
+        }
+        
+        enable() {
+            this._model.addEventListener('changed', this._onModelChanged);
+            this._view.addEventListener('request', this._onViewRequest);
+            this.onModelChanged();
+        }
+        
+        disable() {
+            this._model.removeEventListener('changed', this._onModelChanged);
+            this._view.removeEventListener('request', this._onViewRequest);
+        }
+        
+        onModelChanged() {
+            // Pasar los datos del modelo a la vista para que se dibuje
+            this._view.value = this._model.datos;
+        }
+        
+        onViewRequest(event) {
+            console.log('Solicitud recibida de la vista:', event.detail);
+        }
+    }
+
+    function main() {
+        let myModel = new Model();
+        let myView = new View();
+        let myController = new Controller(myView, myModel);
+        
+        myController.enable();
+        document.body.appendChild(myView);
+    }
+    
+    window.onload = main;
+
+</script>
+
+</html>
