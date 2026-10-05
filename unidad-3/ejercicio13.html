@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Tablero de ajedrez</title>
+  <style>
+    body {padding: 20px }
+    .controles { display: flex; gap: 30px; align-items: flex-start; }
+    
+  </style>
+</head>
+<body>
+  <div class="controles">
+   <x-view></x-view>
+  <x-view1></x-view1></div>
+</body>
+
+  <script type="text/javascript">
+  
+    
+    class ModelTablero extends EventTarget {
+      constructor() {
+        super();
+        this.tamanioCasilla = 32;
+        this.cantidadCasillas = 8;
+        this.colorBlanco = '#FFFFFF';     
+        this.colorNegro = { r: 205, g: 138, b: 255 }; 
+
+      }
+
+      setColorNegro({ r, g, b }) {
+        this.colorNegro = { r, g, b };
+        this.dispatchEvent(new CustomEvent('changed'));
+      }
+
+      get Negro() {
+        const { r, g, b } = this.colorNegro;
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+    }
+
+    
+    class ViewTablero extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' }); 
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = 256;
+        this._canvas.height = 256;
+        this._canvas.style.border = '1px solid black';
+        this.shadowRoot.appendChild(this._canvas);
+
+        this._ctx = this._canvas.getContext('2d'); 
+
+      }
+
+      connectedCallback() {
+      }
+
+      crearGrilla(Model) {
+        const ctx = this._ctx;
+        const c = Model.cantidadCasillas;
+        const t = Model.tamanioCasilla;
+
+        for (let fila = 0; fila < c; fila++) {
+          for (let col = 0; col < c; col++) {
+            if ((fila + col) % 2 === 0) {
+              ctx.fillStyle = Model.colorBlanco;
+            } else {
+              ctx.fillStyle = Model.Negro;
+            }
+            
+            ctx.fillRect(col * t, fila * t, t, t);
+          }
+        }
+      }
+    }
+    customElements.define('x-view', ViewTablero);
+
+   
+    class ViewPanelRGB extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this._rgb = { r: 205, g: 138, b: 255 };
+      }
+
+      connectedCallback() {
+        // Creamos la interfaz con 3 sliders  (min 0, max 255)
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host { display: flex; flex-direction: column; gap: 15px; padding: 20px; background: lightgrey;   }
+            .slider-group { display: flex; flex-direction: column; gap: 5px; }
+            .label-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
+            input[type="range"] { width: 100%; cursor: pointer; }
+          </style>
+          
+          <h3>Color Casillas Oscuras</h3>
+          
+          <div class="slider-group">
+            <div class="label-row"><span>Rojo (R)</span> <span id="val-r">205</span></div>
+            <input type="range" id="slider-r" min="0" max="255" value="205">
+          </div>
+          
+          <div class="slider-group">
+            <div class="label-row"><span>Verde (G)</span> <span id="val-g">138</span></div>
+            <input type="range" id="slider-g" min="0" max="255" value="138">
+          </div>
+          
+          <div class="slider-group">
+            <div class="label-row"><span>Azul (B)</span> <span id="val-b">255</span></div>
+            <input type="range" id="slider-b" min="0" max="255" value="255">
+          </div>
+          
+       `
+
+        // Obtenemos referencias a los elementos del DOM
+        this._sliderR = this.shadowRoot.querySelector('#slider-r');
+        this._sliderG = this.shadowRoot.querySelector('#slider-g');
+        this._sliderB = this.shadowRoot.querySelector('#slider-b');
+        
+        this._valR = this.shadowRoot.querySelector('#val-r');
+        this._valG = this.shadowRoot.querySelector('#val-g');
+        this._valB = this.shadowRoot.querySelector('#val-b');
+        this._preview = this.shadowRoot.querySelector('#preview');
+
+        // Función que se ejecuta cada vez que se mueve CUALQUIER slider
+        const handleInput = () => {
+          // 1. Actualiza el estado interno
+          this._rgb.r = parseInt(this._sliderR.value);
+          this._rgb.g = parseInt(this._sliderG.value);
+          this._rgb.b = parseInt(this._sliderB.value);
+
+          // 2. Actualiza los textos y la previsualización
+          this._valR.textContent = this._rgb.r;
+          this._valG.textContent = this._rgb.g;
+          this._valB.textContent = this._rgb.b;
+
+          // Emite el evento para que el Controlador lo escuche
+          this.dispatchEvent(new CustomEvent('rgb-change', {
+            detail: { r: this._rgb.r, g: this._rgb.g, b: this._rgb.b }
+          }));
+        };
+
+        // Escucha el evento 'input'
+        this._sliderR.addEventListener('input', handleInput);
+        this._sliderG.addEventListener('input', handleInput);
+        this._sliderB.addEventListener('input', handleInput);
+      }
+    }
+    customElements.define('x-view1', ViewPanelRGB);
+
+
+    class Controller {
+      constructor(Model, ViewTablero, ViewPanel) {
+        this._Model = Model;
+        this._ViewTablero = ViewTablero;
+        this._ViewPanel = ViewPanel;
+
+        this._onModelChanged = () => this._ViewTablero.crearGrilla(this._Model);
+        this._onRGBChange = (e) => this._Model.setColorNegro(e.detail);
+      }
+
+      enable() {
+        this._Model.addEventListener('changed', this._onModelChanged);
+        this._ViewPanel.addEventListener('rgb-change', this._onRGBChange);
+        // Renderizado inicial
+        this._ViewTablero.crearGrilla(this._Model);
+      }
+
+      disable() {
+        this._Model.removeEventListener('changed', this._onModelChanged);
+        this._ViewPanel.removeEventListener('rgb-change', this._onRGBChange);
+      }
+    }
+
+
+    function main() {
+      let myModel = new ModelTablero();
+      let myView = document.querySelector('x-view');//new ViewTablero(); 
+      let myView1 = document.querySelector('x-view1');//new ViewPanelRGB();
+      let myController = new Controller(myModel, myView, myView1);
+      myController.enable();
+      //document.body.appendChild(myView);  //no son necesarios porque ya están en el div del HTML
+      //document.body.appendChild(myView1);
+    }
+    
+    window.addEventListener('load', main);
+  </script>
+
+</html>
