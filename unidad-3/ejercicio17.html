@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Cilindro 3D </title>
+</head>
+
+<body>
+
+</body>
+
+<script type="text/javascript">
+
+    class Model extends EventTarget {
+        constructor() {
+            super();
+            // cilindro
+            this._centroX = 400;         
+            this._centroY = 300;        
+            this._radioX = 130;         // Radio horizontal de la elipse (ancho tapa)
+            this._radioY = 45;          // Radio vertical (aplanamiento)
+            this._altura = 260;     // Altura 
+
+            // Colores HEX p/simular 3D
+            this._colorClaro = "#85c1e9";   // Zona mas clarita
+            this._colorMedio = "#2e86c1";   // Tono intermedio
+            this._colorOscuro = "#1b4f72";  // Zona de sombra
+        }
+
+        get datos() {
+            return {
+                centroX: this._centroX,
+                centroY: this._centroY,
+                radioX: this._radioX,
+                radioY: this._radioY,
+                altura: this._altura,
+                colorClaro: this._colorClaro,
+                colorMedio: this._colorMedio,
+                colorOscuro: this._colorOscuro
+            };
+        }
+
+        changed() {
+            this.dispatchEvent(new CustomEvent('changed'));
+        }
+    }
+
+    class View extends HTMLElement {
+        constructor() {
+            super();
+            this._canvas = document.createElement('canvas');
+            this._canvas.width = 800;
+            this._canvas.height = 600;
+            this._canvas.style.border = '1px solid black';
+
+            this._ctx = this._canvas.getContext('2d');
+            this.appendChild(this._canvas);
+        }
+
+        set value(datos) {
+            this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+            this._dibujarCilindro(this._ctx, datos);
+        }
+
+        get value() {
+            return this._canvas;
+        }
+
+        connectedCallback() {
+            console.log('Canvas agregado...');
+        }
+
+        disconnectedCallback() {
+            console.log('Canvas eliminado...');
+        }
+
+        // Función p/dibujar las 2 regiones del cilindro
+        _dibujarCilindro(ctx, datos) {
+            let centroX = datos.centroX;
+            let radioX = datos.radioX;
+            let radioY = datos.radioY;
+
+            // Calcular las posiciones Y de la tapa y la base
+            let yTop = datos.centroY - datos.altura / 2;
+            let yBottom = datos.centroY + datos.altura / 2;
+
+
+            // Cuerpo 
+            let gradCuerpo = this._generarGradienteCuerpo(ctx, datos);
+
+            ctx.beginPath();
+            ctx.moveTo(centroX - radioX, yTop); //esquina sup izq
+            ctx.lineTo(centroX - radioX, yBottom); //esquina inf izq
+            ctx.ellipse(centroX, yBottom, radioX, radioY, 0, Math.PI, 0, true); // Arco inferior 
+            ctx.lineTo(centroX + radioX, yTop);              // Línea vertical derecha
+           
+            ctx.closePath();
+            ctx.fillStyle = gradCuerpo;
+            ctx.fill();
+            ctx.strokeStyle = 'black'; 
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Tapa superior 
+            let gradTapa = this._generarGradienteTapa(ctx, datos, yTop);
+
+            ctx.beginPath();
+            ctx.ellipse(centroX, yTop, radioX, radioY, 0, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fillStyle = gradTapa;
+            ctx.fill();
+            ctx.strokeStyle = 'black'; 
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+
+        // Gradiente CUERPO (simula curvatura)
+        _generarGradienteCuerpo(ctx, datos) {
+            let centroX = datos.centroX;
+            let radioX = datos.radioX;
+
+            // Gradiente horizontal con varios stops p/simular curvatura
+            // oscuro en bordes y claro en el centro
+            let grad = ctx.createLinearGradient(centroX - radioX, 0, centroX + radioX, 0);
+            grad.addColorStop(0, datos.colorOscuro);     // Borde izquierdo (sombra)
+            grad.addColorStop(0.25, datos.colorMedio);   // Transición
+            grad.addColorStop(0.5, datos.colorClaro);    // Centro (luz)
+            grad.addColorStop(0.75, datos.colorMedio);   // Transición
+            grad.addColorStop(1, datos.colorOscuro);     // Borde derecho (sombra)
+
+            return grad;
+        }
+
+        // Gradiente TAPA SUPERIOR (iluminada)
+        _generarGradienteTapa(ctx, datos, yTop) {
+            let centroX = datos.centroX;
+            let radioX = datos.radioX;
+            let radioY = datos.radioY;
+
+            // Gradiente diagonal de arriba-izquierda a abajo-derecha
+            // (simula luz que viene desde arriba)
+            let grad = ctx.createLinearGradient(
+                centroX - radioX, yTop - radioY,
+                centroX + radioX, yTop + radioY
+            );
+            grad.addColorStop(0, datos.colorClaro);      // luz
+            grad.addColorStop(0.6, datos.colorMedio);    // Transición
+            grad.addColorStop(1, datos.colorOscuro);     // sombra
+
+            return grad;
+        }
+
+        _onSave() {
+
+        }
+    }
+
+    customElements.define('x-view', View);
+
+  
+    class Controller {
+        constructor(view, model) {
+            this._view = view;
+            this._model = model;
+            this._onModelChanged = this.onModelChanged.bind(this);
+            this._onViewRequest = this.onViewRequest.bind(this);
+        }
+
+        enable() {
+            this._model.addEventListener('changed', this._onModelChanged);
+            this._view.addEventListener('request', this._onViewRequest);
+            this.onModelChanged();
+        }
+
+        disable() {
+            this._model.removeEventListener('changed', this._onModelChanged);
+            this._view.removeEventListener('request', this._onViewRequest);
+        }
+
+        onModelChanged() {
+            this._view.value = this._model.datos;
+        }
+
+        onViewRequest(event) {
+        }
+    }
+
+    function main() {
+        let myModel = new Model();
+        let myView = new View();
+        let myController = new Controller(myView, myModel);
+
+        myController.enable();
+        document.body.appendChild(myView);
+    }
+
+    window.onload = main;
+
+</script>
+
+</html>
