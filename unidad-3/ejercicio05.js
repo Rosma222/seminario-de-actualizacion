@@ -1,0 +1,93 @@
+
+class Model extends EventTarget {
+    constructor() {
+        super();     
+    }
+   
+    changed() {
+        this.dispatchEvent(new CustomEvent('changed'));
+    }
+}
+
+class View extends HTMLElement {
+    constructor() 
+    {
+        super();
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = 500;
+        this._canvas.height = 500;
+        this._canvas.style.border = '1px solid black';
+
+        let ctx = this._canvas.getContext('2d');
+        let puntajes = [1000, 750, 500, 100, 50]; //array de puntajes
+        let radioMaximo = this._canvas.width / 2; //radio máx del canvas
+        let incrementoRadio = radioMaximo / puntajes.length; //incremento de radio para c/pje
+        let centro = this._canvas.width / 2; //centro del canvas
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i < puntajes.length; i++) { //bucle p/dibujar círculos y puntajes
+            let radio = (i + 1) * incrementoRadio;  
+            let posicionTexto = i === 0 ? centro : centro - (radio - incrementoRadio / 2); //posición del texto=centro del círculo
+
+            ctx.beginPath();
+            ctx.arc(centro, centro, radio, 0, 2 * Math.PI);
+            ctx.fillText(puntajes[i], centro, posicionTexto);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+
+        this.appendChild(this._canvas);
+    }
+    
+    set value(x) {      
+    }
+   
+    get value() {     
+    }
+
+    connectedCallback() {
+       console.log('Canvas agregado...')
+    }
+
+    disconnectedCallback() {    
+    }
+    
+    _onSave() {  
+    }
+}
+customElements.define('x-view', View);
+
+
+class Controller {
+    constructor(view, model) {
+        this._view = view;
+        this._model = model;
+        this._onModelChanged = this.onModelChanged.bind(this);
+        this._onViewRequest = this.onViewRequest.bind(this);
+    }
+    enable() {
+        this._model.addEventListener('changed', this._onModelChanged);
+        this._view.addEventListener('request', this._onViewRequest);
+    }
+    disable() {
+        this._model.removeEventListener('changed', this._onModelChanged);
+        this._view.removeEventListener('request', this._onViewRequest);
+    }
+    onModelChanged() {
+        
+    }
+    onViewRequest(event) {  
+    }
+}
+
+function main() {
+    let myModel = new Model();
+    let myView = new View();
+    let myController = new Controller(myView, myModel);
+    myController.enable();
+    document.body.appendChild(myView);
+}
+
+window.onload = main;
