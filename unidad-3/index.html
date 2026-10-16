@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Guia 3: Ejercicios en Canvas 2D</title>
+    <style>
+        select {
+            margin: 8px;
+        }
+
+        iframe {
+            display: block;
+            width: 850px;
+            height: 0;
+            border: none;
+        }
+
+        iframe[hidden] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <label for="selector-ejercicio">Ejercicio: </label>
+    <select id="selector-ejercicio">
+        <option value="">-- Elegir ejercicio --</option>
+        <option value="ejercicio01.js">Ejercicio 1</option>
+        <option value="ejercicio02.js">Ejercicio 2</option>
+        <option value="ejercicio03.js">Ejercicio 3</option>
+        <option value="ejercicio04.js">Ejercicio 4</option>
+        <option value="ejercicio05.js">Ejercicio 5</option>
+        <option value="ejercicio07.js">Ejercicio 7</option>
+        <option value="ejercicio08.js">Ejercicio 8</option>
+        <option value="ejercicio09.js">Ejercicio 9</option>
+        <option value="ejercicio10.js">Ejercicio 10</option>
+        <option value="ejercicio11.js">Ejercicio 11</option>
+        <option value="ejercicio13.js">Ejercicio 13</option>
+        <option value="ejercicio14.js">Ejercicio 14</option>
+        <option value="ejercicio15.js">Ejercicio 15</option>
+        <option value="ejercicio16.js">Ejercicio 16</option>
+        <option value="ejercicio17.js">Ejercicio 17</option>
+        <option value="ejercicio20.js">Ejercicio 20</option>
+        <option value="ejercicio21.js">Ejercicio 21</option>
+        <option value="ejercicio25.js">Ejercicio 25</option>
+        <option value="ejercicio27.js">Ejercicio 27</option>
+        <option value="ejercicio28.js">Ejercicio 28</option>
+        <option value="ejercicio30.js">Ejercicio 30</option>
+        <option value="ejercicio31.js">Ejercicio 31</option>
+    </select>
+    <iframe id="visor-ejercicio" title="Ejercicio seleccionado" hidden></iframe>
+
+    <script>
+        const visor = document.getElementById('visor-ejercicio');
+        const selector = document.getElementById('selector-ejercicio');
+
+        function mostrarEjercicio(archivo) {
+            if (!archivo) {
+                visor.srcdoc = '';
+                visor.hidden = true;
+                visor.style.height = '0';
+                return;
+            }
+
+            visor.hidden = false;
+            visor.style.height = '0';
+            visor.srcdoc = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"></head><body><script src="' +
+                archivo +
+                '" onerror="document.body.textContent=\'No se pudo cargar el ejercicio.\'"><\/script></body></html>';
+        }
+
+        selector.addEventListener('change', function () {
+            mostrarEjercicio(this.value);
+        });
+
+        visor.onload = function () {
+            const documento = visor.contentDocument;
+            if (!documento || !selector.value) return;
+
+            visor.style.height = (documento.documentElement.scrollHeight + 1) + 'px';
+        };
+    </script>
+</body>
+</html>
