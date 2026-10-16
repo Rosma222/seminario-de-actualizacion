@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Ejercicios integradores</title>
+    <script src="MVCCanvas.js"></script>
+    <script src="ejercicio06.js"></script>
+    <script src="ejercicio12.js"></script>
+    <script src="ejercicio19.js"></script>
+</head>
+<body>
+    <div>
+        <label for="selectEjercicio">Ejercicio: </label>
+        <select id="selectEjercicio">
+            <option value="ejercicio06">Ejercicio 6</option>
+            <option value="ejercicio12">Ejercicio 12</option>
+            <option value="ejercicio19">Ejercicio 19</option>
+        </select>
+        <button id="btnLimpiar">Limpiar Canvas</button>
+    </div>
+    
+    <script>
+        function main() {
+            let myModel = new Model();
+            let myView = new View(); // Crear instancia 
+            let myController = new Controller(myView, myModel);
+            myController.enable();
+
+            const selectEjercicio = document.getElementById('selectEjercicio');
+            selectEjercicio.onchange = (e) => {
+                myView.cambiarEjercicio(e.target.value);
+            };
+        
+            document.getElementById('btnLimpiar').onclick = () => {
+                myView.solicitarLimpieza();
+            };
+
+            // Agregar la vista al DOM
+            document.body.appendChild(myView);
+
+            // Inicializar con el primer ejercicio
+            myView.cambiarEjercicio('ejercicio06');
+        }
+
+        window.onload = main;
+    </script>
+</body>
+</html>
